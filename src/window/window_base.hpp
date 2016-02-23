@@ -19,19 +19,28 @@
 #ifndef VULKAN_WINDOW_WINDOW_BASE_HPP
 #define VULKAN_WINDOW_WINDOW_BASE_HPP
 
+#if defined(_WIN32)
+#else 
+#include "window_traits_linux.h"
+#endif
+
 #include <string>
 
 static constexpr uint32_t defaultWidth  = 1280;
 static constexpr uint32_t defaultHeight = 720;
 
-// Defines a class which provides the general features of a window which are
-// not specific to the OS. The class can then be used as a base class of the
-// more specific windows class for an OS.
+// Defines a class which defines the interface for windows, and then by using
+// CRTP, the more specific functionality for the platform is implemented in the
+// derived class.
 //
 // tparam: OsSpecificWindow Implements OS specific window functions.
-template <typename OsSpecificWindow>
+// tparam: WinTraits The traits specific to the window
+template <typename OsSpecificWindow, typename WinTraits>
 class WindowBase {
- public:  
+ public: 
+  // Alias for the type of window which is being used.
+  using WindowType = typename WinTraits::WindowType;
+
   // Default constructor to set the window size.
   WindowBase() 
   : Width(defaultWidth), Height(defaultHeight), Title("Vulkan Example"), 
@@ -42,11 +51,14 @@ class WindowBase {
   : Width(width), Height(height), Title("Vulkan Example"), 
     Name("vulkanExample") {}
 
- protected:
-  uint32_t Width;  
-  uint32_t Height;
+  // Creates the window.
+  WindowType create() {
+    return osSpecificWindow()->setupWindow();
+  };
 
- private:
+ protected:
+  uint32_t    Width;  
+  uint32_t    Height;
   std::string Title;
   std::string Name;
 
@@ -59,11 +71,15 @@ class WindowBase {
   const OsSpecificWindow* osSpecificWindow() const {
     return static_cast<const OsSpecificWindow*>(this);
   }
-
-  // Sets up the window.
-  void setupWindow() const {
-    osSpecificWindow()->setupWindow();
-  }
 };
+
+// Aliases for a window based on the platform which is being used, since 
+// we can be sure that only one of these can be valid for a single program.
+#if defined(_WIN32)
+  //using Window = Window<WindowsWindow>;
+#else 
+  #include "window_linux.h"
+  using Window = LinuxWindow;
+#endif
 
 #endif  // VULKAN_WINDOW_WINDOW_BASE_HPP
