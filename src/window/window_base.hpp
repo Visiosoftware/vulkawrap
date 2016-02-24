@@ -25,9 +25,19 @@
 #endif
 
 #include <string>
+#include <glm/glm.hpp>
 
 static constexpr uint32_t defaultWidth  = 1280;
 static constexpr uint32_t defaultHeight = 720;
+
+struct Mouse {
+  Mouse() 
+  : position(0.0f, 0.0f), leftButton(false), rightButton(false) {}
+
+  glm::vec2 position;
+  bool      leftButton;
+  bool      rightButton;
+};
 
 // Defines a class which defines the interface for windows, and then by using
 // CRTP, the more specific functionality for the platform is implemented in the
@@ -66,6 +76,12 @@ class WindowBase {
   uint32_t    Height;
   std::string Title;
   std::string Name;
+   
+  struct {
+    glm::vec2 position      = glm::vec2(0.0f, 0.0f);
+    bool      leftButton    = false;
+    bool      rightButton   = false;
+  } Mouse;
 
   // Gets non-const access to the OsSpecificWindow.
   OsSpecificWindow* osSpecificWindow() {

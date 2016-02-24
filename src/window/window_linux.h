@@ -23,7 +23,6 @@
 // guards.
 
 #include "window_traits_linux.h"
-#include <iostream>
 #include <stdlib.h>
 
 // Windows class which provides the implementation of the window functionality
@@ -58,9 +57,18 @@ class LinuxWindow : public WindowBase<LinuxWindow, WindowTraits> {
   WindowType                Window;
   xcb_intern_atom_reply_t*  AtomDeleteWindow;
 
+  // Handles window events.
+  void handleEvent(const xcb_generic_event_t* motion);
+
+  // handles mouse events.
+  void handleMouseEvent(const xcb_motion_notify_event_t* motion);
+
   // Initializes the XCB connection.
   void initializeXcbConnection();
 };
+
+
+//---- Public ---------------------------------------------------------------//
 
 LinuxWindow::LinuxWindow() {
   initializeXcbConnection();
@@ -120,6 +128,51 @@ typename WindowTraits::WindowType LinuxWindow::setupWindow() {
   return(Window);
 }
 
+//---- Private --------------------------------------------------------------//
+
+void LinuxWindow::handleEvent(const xcb_generic_event_t* event) {
+  switch (event->response_type & 0x7F) {
+    case XCB_CLIENT_MESSAGE: {
+      auto messageEvent = 
+        reinterpret_cast<const xcb_client_message_event_t*>(event);
+      if (messageEvent->data.data32[0] == AtomDeleteWindow->atom) {
+        // quit
+      } 
+    }  break;
+    case XCB_MOTION_NOTIFY: {
+      auto  motion = 
+        reinterpret_cast<const xcb_motion_notify_event_t*>(event);
+      handleMouseEvent(motion);
+    } break;
+    case XCB_BUTTON_PRESS: {
+      auto buttonPress = 
+        reinterpret_cast<const xcb_button_press_event_t*>(event);
+      Mouse.leftButton  = (buttonPress->detail & XCB_BUTTON_INDEX_1);
+      Mouse.rightButton = (buttonPress->detail & XCB_BUTTON_INDEX_3);
+    } break;
+    case XCB_BUTTON_RELEASE: {
+      auto buttonPress = 
+        reinterpret_cast<const xcb_button_press_event_t*>(event);
+      if (buttonPress->detail & XCB_BUTTON_INDEX_1) 
+        Mouse.leftButton = false;
+      if (buttonPress->detail & XCB_BUTTON_INDEX_3)
+        Mouse.rightButton = false;
+    } break;
+    default: break;
+  }
+}
+
+void LinuxWindow::handleMouseEvent(const xcb_motion_notify_event_t* motion) {
+  if (Mouse.leftButton) {
+    // Update rotation or something 
+  }
+  if (Mouse.rightButton) {
+    // change the zoom or something 
+  }
+  Mouse.position = glm::vec2(static_cast<float>(motion->event_x),
+                             static_cast<float>(motion->event_y));
+}
+ 
 void LinuxWindow::initializeXcbConnection() {
   const xcb_setup_t*    setup;
   xcb_screen_iterator_t screenIterator;
@@ -128,7 +181,7 @@ void LinuxWindow::initializeXcbConnection() {
   // Create the connection
   Connection = xcb_connect(nullptr, &screen);
   if (Connection == nullptr) {
-    std::cerr << "Could not create window, terminating\n" << std::flush;
+//    std::cerr << "Could not create window, terminating\n" << std::flush;
     exit(EXIT_FAILURE);
   }
 
@@ -142,5 +195,10 @@ void LinuxWindow::initializeXcbConnection() {
 void LinuxWindow::render() {
   xcb_flush(Connection);
   while (true) {
+    auto event = xcb_poll_for_event(Connection);
+    if (event) {
+      handleEvent(event);
+      free(event);
+    }
   }
 }
