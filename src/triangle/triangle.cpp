@@ -24,4 +24,5 @@ int main() {
   // Create a new window using the default size.
   Window window;
   window.create();
+  window.draw();
 }

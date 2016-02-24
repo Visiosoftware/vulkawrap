@@ -46,8 +46,8 @@ class LinuxWindow : public WindowBase<LinuxWindow, WindowTraits> {
   // Sets up a window using the XCB window library.
   WindowType setupWindow();
 
-  // Renders the window to the screen.
-  void render();
+  // Draws the window to the screen
+  void draw();
 
  private:
   // Alias for the window base type.
@@ -139,8 +139,8 @@ void LinuxWindow::initializeXcbConnection() {
   Screen = screenIterator.data;
 }
 
-void LinuxWindow::render() {
+void LinuxWindow::draw() {
   xcb_flush(Connection);
-  while (true) {
-  }
+  //while (!terminate) {
+  //}
 }

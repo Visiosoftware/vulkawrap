@@ -1,6 +1,6 @@
 # --------------------       CMakeLists.txt for snap     -------------------- #
 
-cmake_minimum_required (VERSION 3.4)
+cmake_minimum_required (VERSION 3.1)
 project (VulkanExamples)
 
 # --------------------        Define Subdirectories      -------------------- #

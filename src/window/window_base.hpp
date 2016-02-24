@@ -56,6 +56,11 @@ class WindowBase {
     return osSpecificWindow()->setupWindow();
   };
 
+  // Draws the window to the screen.
+  void draw() {
+    return osSpecificWindow()->render();
+  };
+
  protected:
   uint32_t    Width;  
   uint32_t    Height;
