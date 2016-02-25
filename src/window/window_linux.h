@@ -23,6 +23,7 @@
 // guards.
 
 #include "window_traits_linux.h"
+#include <iostream>
 #include <stdlib.h>
 
 // Windows class which provides the implementation of the window functionality
@@ -52,6 +53,7 @@ class LinuxWindow : public WindowBase<LinuxWindow, WindowTraits> {
   // Alias for the window base type.
   using WindowBaseType = WindowBase<LinuxWindow, WindowTraits>;
 
+  bool                      Quit;
   xcb_connection_t*         Connection;
   xcb_screen_t*             Screen;
   WindowType                Window;
@@ -70,12 +72,13 @@ class LinuxWindow : public WindowBase<LinuxWindow, WindowTraits> {
 
 //---- Public ---------------------------------------------------------------//
 
-LinuxWindow::LinuxWindow() {
+LinuxWindow::LinuxWindow() 
+: Quit(false) {
   initializeXcbConnection();
 };
 
 LinuxWindow::LinuxWindow(uint32_t width, uint32_t height) 
-: WindowBaseType(width, height) {
+: WindowBaseType(width, height), Quit(false) {
   initializeXcbConnection();
 }
 
@@ -135,9 +138,8 @@ void LinuxWindow::handleEvent(const xcb_generic_event_t* event) {
     case XCB_CLIENT_MESSAGE: {
       auto messageEvent = 
         reinterpret_cast<const xcb_client_message_event_t*>(event);
-      if (messageEvent->data.data32[0] == AtomDeleteWindow->atom) {
-        // quit
-      } 
+      if (messageEvent->data.data32[0] == AtomDeleteWindow->atom) 
+        Quit = true; 
     }  break;
     case XCB_MOTION_NOTIFY: {
       auto  motion = 
@@ -158,16 +160,21 @@ void LinuxWindow::handleEvent(const xcb_generic_event_t* event) {
       if (buttonPress->detail & XCB_BUTTON_INDEX_3)
         Mouse.rightButton = false;
     } break;
+    case XCB_KEY_RELEASE: {
+      auto key = reinterpret_cast<const xcb_key_release_event_t*>(event);
+      if (key->detail == 0x90) 
+        Quit = true;
+    } break;
     default: break;
   }
 }
 
 void LinuxWindow::handleMouseEvent(const xcb_motion_notify_event_t* motion) {
   if (Mouse.leftButton) {
-    // Update rotation or something 
+    std::cout << Mouse.position.x << " : " << Mouse.position.y << "\n";
   }
   if (Mouse.rightButton) {
-    // change the zoom or something 
+    std::cout << "Options :";
   }
   Mouse.position = glm::vec2(static_cast<float>(motion->event_x),
                              static_cast<float>(motion->event_y));
@@ -194,7 +201,7 @@ void LinuxWindow::initializeXcbConnection() {
 
 void LinuxWindow::render() {
   xcb_flush(Connection);
-  while (true) {
+  while (!Quit) {
     auto event = xcb_poll_for_event(Connection);
     if (event) {
       handleEvent(event);
