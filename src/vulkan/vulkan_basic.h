@@ -39,7 +39,7 @@ class VulkanBasic {
    // param: engineName The name of the vulkan engine
    // param: extensions The extentions which should be used. 
    VkResult createInstance(const char* appName = "", const char* engineName = "",
-    std::vector<const char*>& extensions = std::vector<const char*>{});
+    const std::vector<const char*>& extensions = std::vector<const char*>{});
 
    // Creates a vulkan device
    //
@@ -67,4 +67,4 @@ class VulkanBasic {
    void setPhysicalDevice();
 };
 
-#ifndef // VULKAN_VULKAN_VULKAN_BASIC_H
+#endif // VULKAN_VULKAN_VULKAN_BASIC_H

@@ -75,7 +75,7 @@ class LinuxWindow : public WindowBase<LinuxWindow, WindowTraits> {
 LinuxWindow::LinuxWindow() 
 : Quit(false) {
   initializeXcbConnection();
-};
+}
 
 LinuxWindow::LinuxWindow(uint32_t width, uint32_t height) 
 : WindowBaseType(width, height), Quit(false) {

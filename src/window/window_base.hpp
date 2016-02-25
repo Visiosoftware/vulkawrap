@@ -23,6 +23,7 @@
 #else 
 #include "window_traits_linux.h"
 #endif
+#include "../vulkan/vulkan_basic.h"
 
 #include <string>
 #include <glm/glm.hpp>

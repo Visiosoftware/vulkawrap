@@ -50,9 +50,14 @@ IF(APPLE)
   set (XCB_INCLUDE_DIRS /opt/X11/include)
 ENDIF(APPLE)
 
-include_directories ( ${VulkanExamples_SOURCE_DIR}/include
+include_directories ( ${VulkanExamples_SOURCE_DIR}/src
+                      ${VulkanExamples_SOURCE_DIR}/src/vulkan
                       ${XCB_INCLUDE_DIRS}
                     )
+# --------------------     Make libraries in subdirs     -------------------- # 
+
+add_library(VkBasic SHARED vulkan/vulkan_basic.cpp)
+target_link_libraries ( VkBasic -lvulkan)
 
 # --------------------   Set Example Bin Directory       -------------------- #
 
@@ -85,7 +90,7 @@ endfunction()
 
 set (example_exe       triangle             )
 set (example_files     triangle/triangle.cpp) 
-set (example_libs      -L/opt/X11/lib -lxcb )
+set (example_libs      -L/opt/X11/lib -lxcb VkBasic )
 
 MakeExample (example_exe example_files example_libs example_exe_dir)
 

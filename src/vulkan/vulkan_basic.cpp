@@ -14,6 +14,7 @@
 //---------------------------------------------------------------------------//
 
 #include "vulkan_basic.h"
+#include <cassert>
 
 //---- Public ---------------------------------------------------------------//
 
@@ -22,20 +23,20 @@
 VulkanBasic::VulkanBasic()
 : GraphicsQueueId(0) {
   VkResult error = createInstance();
-  assert(!error & "Could not create Vulkan instance : Fatal Error\n");
+  assert(!error && "Could not create Vulkan instance : Fatal Error\n");
 
   setPhysicalDevice();    // Terminates if no device is found
   findGraphicsQueue();    // Terminates of no gfx queue is found
 
   // Create the properties for the logical devices
-  const float queuePriorities      = 0.0f;
-  VkDeviceQueueCreatInfo queueInfo = {};
+  const float queuePriorities       = 0.0f;
+  VkDeviceQueueCreateInfo queueInfo = {};
   queueInfo.sType               =  VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-  queueInfo.queueFamilyIndex       = GraphicsQueueId;
-  queueInfo.pQueuePriorities       = &queuePriorities;
+  queueInfo.queueFamilyIndex        = GraphicsQueueId;
+  queueInfo.pQueuePriorities        = &queuePriorities;
 
   error = createDevice(queueInfo);
-  assert(!error & "Failed to create device : Fatal Error\n");
+  assert(!error && "Failed to create device : Fatal Error\n");
  
   // Get the device memory properties
   vkGetPhysicalDeviceMemoryProperties(PhysicalDevice, &DeviceMemProps);
@@ -48,10 +49,10 @@ VulkanBasic::VulkanBasic()
 }
 
 VkResult VulkanBasic::createInstance(const char* appName, 
-    const char* engineName, std::vector<const char*>& extensions) {
+    const char* engineName, const std::vector<const char*>& extensions) {
   // Set the application properties
   VkApplicationInfo appInfo = {};
-  appInfo.sType             = Vk_STRUCTURE_TYPE_APPLICATION_INFO;
+  appInfo.sType             = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   appInfo.pApplicationName  = appName;
   appInfo.pEngineName       = engineName;
 
@@ -80,10 +81,10 @@ VkResult VulkanBasic::createDevice(VkDeviceQueueCreateInfo requestedQueues) {
   std::vector<const char*> enabledExtensions = 
     { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-  VkDeviceCreateInfo deviceInfo   = {}
+  VkDeviceCreateInfo deviceInfo   = {};
   deviceInfo.sType                = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
   deviceInfo.pNext                = nullptr;
-  deviceIngo.queueCreateInfoCount = 1;
+  deviceInfo.queueCreateInfoCount = 1;
   deviceInfo.pQueueCreateInfos    = &requestedQueues;
   deviceInfo.pEnabledFeatures     = nullptr;
 
@@ -97,13 +98,14 @@ VkResult VulkanBasic::createDevice(VkDeviceQueueCreateInfo requestedQueues) {
 
 //---- Private --------------------------------------------------------------//
 
-void findGraphicsQueue() {
+void VulkanBasic::findGraphicsQueue() {
   // Check that this has not been done already
   if (GraphicsQueueId > 0) return;
   uint32_t queueCount;
 
-  vkGetPhysicalDeviceQueueProperties(PhysicalDevice, &queueCount, nullptr);
-  assert(queueCount > 1 & "No queue for physical device : Fatal Error\n");
+  vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueCount,
+    nullptr);
+  assert(queueCount > 1 && "No queue for physical device : Fatal Error\n");
 
   std::vector<VkQueueFamilyProperties> queueProperties;
   queueProperties.resize(queueCount);
@@ -115,24 +117,25 @@ void findGraphicsQueue() {
     if (queueProperties[GraphicsQueueId].queueFlags & VK_QUEUE_GRAPHICS_BIT)
       break;
   }
-  assert(GraphicsQueueId < queueCount & "No graphics queue found for 
-    physical device : Fatal Error\n");
+  assert(GraphicsQueueId < queueCount && "No graphics queue found for " &&
+    "physical device : Fatal Error\n");
 }
 
-void setPhysicalDevice() {
-  assert(Instance == 0 & "VkInstance not initialized before device counting\n");
+void VulkanBasic::setPhysicalDevice() {
+  assert(Instance == 0 && "VkInstance not initialized before device counting\n");
 
   uint32_t deviceCount = 0;
-  VkResult error       = vkEnumerateDevices(Instance, &deviceCount, nullptr);
+  VkResult error       = vkEnumeratePhysicalDevices(Instance, &deviceCount, 
+                           nullptr);
 
-  assert(!error & "Error during device count : Fatal Error\n");
-  assert(deviceCount > 0 & "No valid vulkan devices found : Fatal Error\n");
+  assert(!error && "Error during device count : Fatal Error\n");
+  assert(deviceCount > 0 && "No valid vulkan devices found : Fatal Error\n");
 
   std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
   error = vkEnumeratePhysicalDevices(Instance, &deviceCount, 
             physicalDevices.data());
 
-  assert(!error & "Could not enumerate physical devices : Fatal Error\n");
+  assert(!error && "Could not enumerate physical devices : Fatal Error\n");
 
   // Set the physical device to the first one in the list for now
   PhysicalDevice = physicalDevices[0];
