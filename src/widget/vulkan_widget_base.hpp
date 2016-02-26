@@ -56,7 +56,7 @@ class VulkanWidgetBase {
  public:
   // Alias for vector of images
   using VkImageVec  = std::vector<VkImage>;           // Image container alias.
-  using VkBufferVec = std::vector<SwapChainBufferT>;  // Buffer container.
+  using VkBufferVec = std::vector<SwapChainBuffer>;   // Buffer container.
 
   // TODO: Read doc and comment these
   VkFormat        colorFormat;
