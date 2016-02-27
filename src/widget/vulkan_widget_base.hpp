@@ -84,6 +84,14 @@ class VulkanWidgetBase {
   void connectVulkanParams(VkInstance instance, VkPhysicalDevice physicalDevice,
     VkDevice device);
 
+  // Creates the vulkan swap chain and gets the image sizes and widhts.
+  //
+  // \param commandBuffer The vulkan command buffer.
+  // \param width The image width.
+  // \param height The image height.
+  void createSwapChain(VkCommandBuffer commandBuffer, uint32_t width, 
+    uint32_t height);
+
  private:
   VkInstance       Instance;       // The vulkan instance used for the widget.
   VkDevice         Device;         // The logical device.
@@ -157,6 +165,64 @@ void VulkanWidgetBase::connectVulkanParams(VkInstance instance,
   GET_DEVICE_PROC_ADDR( device, GetSwapchainImageKHR );
   GET_DEVICE_PROC_ADDR( device, AquireNextImageKHR   );
   GET_DEVICE_PROC_ADDR( device, QueuePresentKHR      );
+}
+
+template <typename WsiType>
+void VulkanWidgetBase::createSwapChain(VkCommandBuffer commandBuffer, 
+    uint32_t* width, uint32_t* height) {
+  VkResult       error;
+  VkSwapchainKHR prevSwapChain = swapChain;
+
+  // Get the surface properties and formats for the physical device.
+  VkSurfaceCapabilitiesKHR surfCapabilities;
+  error = FpGetPhysicalDeviceSurfaceCapabilitiesKHR(PhysicalDevice, Surface, 
+            &surfCaoabilities);
+  assert(!error && "Could not get surface capabilites : Fatal Error\n");
+
+  // Get the available present modes for the surface and phy device.
+  uint32_t numPresentModes;
+  error = FpGetPhysicalDeviceSurfacePresentModesKHR(PhysicalDevice, Surface, 
+            &numPresentModes, nullptr);
+  assert(!error && "Failed to get number of present modes : Fatal Error\n");
+  assert(numPresentModes > 0 && "No present modes for physical devices : "
+    && "Fatal Error\n");
+
+  // Create the present modes and get the data for them.
+  std::vector<VkPresentModeKHR> presentModes(numPresentModes);
+  error = FpGetPhysicalDeviceSurfacePresentModesKHR(PhysicalDevice, Surface,
+            &numPresentModes, presentModes.data());
+  assert(!error && "Failed to create present modes : Fatal Error\n");
+
+  VkExtent2D swapChainExtent = {};
+
+  // EIther both the width and the height are -1 or none are.
+  if (surfCapabilities.currentExtent.width == -1) {
+    // If the surface is not defined, then set the size 
+    // to the size requested by the function arguments.
+    swapChainExtent.width  = *width;
+    swapChainExtent.height = *height;
+  } else {
+    // If the surface size is defined, then 
+    // the swapchain size needs to match.
+    swapChainExtent = surfCapabilities.currentExtent;
+    *width          = surfCapabilities.currentExtent.width;
+    *height         = surfCapabilities.currentExtent.height;
+  }
+
+  // Mailbox mode is chosen if present because it's 
+  // the lowest latency non-tearning present mode.
+  VkPresentModeKHR swapChainPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+  for (const auto& presentMode : presentModes) {
+    if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+      swapChainPresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+      break;
+    }
+    if (swapChainPresentMode != VK_PRESENT_MODE_MAILBOX_KHR &&
+        presentMode == VK_PRESENT_MODE_IMMDIATE_KHR) { 
+      swapChainPresentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+    }
+  }
+  // TODO: Implement rest of function ...
 }
 
 #endif  // VULKAN_WIDGET_VULKAN_WIDGET_BASE_HPP
