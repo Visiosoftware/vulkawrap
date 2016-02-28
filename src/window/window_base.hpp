@@ -24,6 +24,7 @@
 #include "window_traits_linux.h"
 #endif
 #include "../vulkan/vulkan_basic.h"
+#include "../widget/vulkan_widget_base.hpp"
 
 #include <string>
 #include <glm/glm.hpp>

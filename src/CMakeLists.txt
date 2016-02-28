@@ -52,12 +52,15 @@ ENDIF(APPLE)
 
 include_directories ( ${VulkanExamples_SOURCE_DIR}/src
                       ${VulkanExamples_SOURCE_DIR}/src/vulkan
+                      ${VulkanExamples_SOURCE_DIR}/src/utilities
+                      ${VulkanExamples_SOURCE_DIR}/src/widget
                       ${XCB_INCLUDE_DIRS}
                     )
 # --------------------     Make libraries in subdirs     -------------------- # 
 
 add_library(VkBasic SHARED vulkan/vulkan_basic.cpp)
-target_link_libraries ( VkBasic -lvulkan)
+add_library(VkUtilities SHARED utilities/vulkan_utils.cpp)
+target_link_libraries ( VkBasic VkUtilities -lvulkan)
 
 # --------------------   Set Example Bin Directory       -------------------- #
 
@@ -90,7 +93,7 @@ endfunction()
 
 set (example_exe       triangle             )
 set (example_files     triangle/triangle.cpp) 
-set (example_libs      -L/opt/X11/lib -lxcb VkBasic )
+set (example_libs      -L/opt/X11/lib -lxcb VkBasic VkUtilities )
 
 MakeExample (example_exe example_files example_libs example_exe_dir)
 

@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/joker/Software/C++/vulkan/src/vulkan/vulkan_basic.cpp
+vulkan_basic.h
+/home/joker/Software/C++/vulkan/src/vulkan/vulkan_basic.h
+cassert
+-
+
+/home/joker/Software/C++/vulkan/src/vulkan/vulkan_basic.h
+vulkan/vulkan.h
+-
+vector
+-
+
