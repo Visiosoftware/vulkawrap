@@ -1,1 +1,0 @@
-/usr/bin/c++  -fPIC -std=c++14 -g -pedantic -Wall  -shared -Wl,-soname,libVkBasic.so -o libVkBasic.so CMakeFiles/VkBasic.dir/vulkan/vulkan_basic.cpp.o libVkUtilities.so -lvulkan -Wl,-rpath,/home/joker/Software/C++/vulkan/build/src 
