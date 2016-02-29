@@ -1,1 +1,0 @@
-/usr/bin/c++   -std=c++14 -g -pedantic -Wall -DVK_USE_PLATFORM_XCB_KHR   CMakeFiles/triangle.dir/triangle/triangle.cpp.o  -o ../../bin/triangle -rdynamic -lxcb -lvulkan libVkBasic.so libVkUtilities.so -lvulkan -Wl,-rpath,/home/joker/Software/C++/vulkan/build/src 

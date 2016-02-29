@@ -1,3 +1,0 @@
-/home/joker/Software/C++/vulkan/build/src/CMakeFiles/VkUtilities.dir
-/home/joker/Software/C++/vulkan/build/src/CMakeFiles/triangle.dir
-/home/joker/Software/C++/vulkan/build/src/CMakeFiles/VkBasic.dir
