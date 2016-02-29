@@ -14,7 +14,9 @@
 //---------------------------------------------------------------------------//
 
 #include "vulkan_basic.h"
+#include "../utilities/vulkan_utils.h"
 #include <cassert>
+#include <iostream>
 
 //---- Public ---------------------------------------------------------------//
 
@@ -44,8 +46,11 @@ VulkanBasic::VulkanBasic()
   // Get the graphics queue
   vkGetDeviceQueue(Device, GraphicsQueueId, 0, &Queue);
 
-  // TODO: Depth format and swapchain
-
+  // Find a suitable depth format.
+  VkBool32 validDepthFormat = vkutil::getSupportedDepthFormat(PhysicalDevice, 
+                                &DepthFormat); 
+  assert(validDepthFormat && "Failed to get a valid depth format : " 
+         && "Fatal Error\n");
 }
 
 VkResult VulkanBasic::createInstance(const char* appName, 
@@ -57,6 +62,7 @@ VkResult VulkanBasic::createInstance(const char* appName,
   appInfo.pEngineName       = engineName;
 
   // Might need workaround here for invalid vulkan version
+  appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 2);
  
   // Create a vector with the default extensions 
   // and then add the user defined extensions
@@ -91,7 +97,7 @@ VkResult VulkanBasic::createDevice(VkDeviceQueueCreateInfo requestedQueues) {
   if (enabledExtensions.size() > 0) {
     deviceInfo.enabledExtensionCount =
       static_cast<uint32_t>(enabledExtensions.size());
-    deviceInfo.ppEnabledLayerNames = enabledExtensions.data();
+    deviceInfo.ppEnabledExtensionNames = enabledExtensions.data();
   }
   return vkCreateDevice(PhysicalDevice, &deviceInfo, nullptr, &Device);
 }
@@ -105,7 +111,7 @@ void VulkanBasic::findGraphicsQueue() {
 
   vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueCount,
     nullptr);
-  assert(queueCount > 1 && "No queue for physical device : Fatal Error\n");
+  assert(queueCount >= 1 && "No queue for physical device : Fatal Error\n");
 
   std::vector<VkQueueFamilyProperties> queueProperties;
   queueProperties.resize(queueCount);
@@ -122,7 +128,8 @@ void VulkanBasic::findGraphicsQueue() {
 }
 
 void VulkanBasic::setPhysicalDevice() {
-  assert(Instance == 0 && "VkInstance not initialized before device counting\n");
+  assert(Instance != nullptr && "VkInstance not initialized before device "
+         && "counting : Fatal Error\n");
 
   uint32_t deviceCount = 0;
   VkResult error       = vkEnumeratePhysicalDevices(Instance, &deviceCount, 

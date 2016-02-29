@@ -10,33 +10,6 @@ ELSEIF(APPLE)
   set (Boost_USE_STATIC_LIBS OFF)
 ENDIF()
 
-# --------------------     Make DYLIBS easy to find      -------------------- #
-
-IF(APPLE)
-  # Don't skip the full RPATH for the build tree
-  SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
-
-  # When building, don't use the install RPATH already
-  # (but later on when installing)
-  SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
-
-  SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-
-  # Add the automatically determined parts of the RPATH which 
-  # point to directories outside the build tree to the install RPATH
-  SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
-
-  # The RPATH to be used when installing, 
-  # but only if it's not a system directory
-  LIST( FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES 
-        "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir
-      )
-  IF("${isSystemDir}" STREQUAL "-1")
-    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-  ENDIF("${isSystemDir}" STREQUAL "-1")
-ENDIF()
-
 # --------------------      Try and find Modules         -------------------- #
 
 # Make sure that the required boost libraries are installed
@@ -50,6 +23,14 @@ IF(APPLE)
   set (XCB_INCLUDE_DIRS /opt/X11/include)
 ENDIF(APPLE)
 
+IF(WIN32)
+ELSE(WIN32)
+  find_library(VULKAN_LIB NAMES libvulkan.so PATHS 
+               /usr/lib) 
+ENDIF(WIN32)
+
+message(STATUS ${VULKAN_LIB})
+
 include_directories ( ${VulkanExamples_SOURCE_DIR}/src
                       ${VulkanExamples_SOURCE_DIR}/src/vulkan
                       ${VulkanExamples_SOURCE_DIR}/src/utilities
@@ -60,7 +41,8 @@ include_directories ( ${VulkanExamples_SOURCE_DIR}/src
 
 add_library(VkBasic SHARED vulkan/vulkan_basic.cpp)
 add_library(VkUtilities SHARED utilities/vulkan_utils.cpp)
-target_link_libraries ( VkBasic VkUtilities -lvulkan)
+link_libraries(xcb ${VULKAN_LIB})
+target_link_libraries (VkBasic VkUtilities ${VULKAN_LIB})
 
 # --------------------   Set Example Bin Directory       -------------------- #
 
@@ -93,7 +75,7 @@ endfunction()
 
 set (example_exe       triangle             )
 set (example_files     triangle/triangle.cpp) 
-set (example_libs      -L/opt/X11/lib -lxcb VkBasic VkUtilities )
+set (example_libs      VkBasic VkUtilities ${VULKAN_LIB})
 
 MakeExample (example_exe example_files example_libs example_exe_dir)
 

@@ -18,6 +18,7 @@
 #define VULKAN_WIDGET_VULKAN_WIDGET_BASE_HPP
 
 #include "widget_traits.h"
+#include "../vulkan/vulkan_basic.h"
 #include "../utilities/vulkan_utils.h"
 #include <cassert>
 #include <cstdlib>
@@ -26,21 +27,21 @@
 //---- Utility Macros -------------------------------------------------------//
 
 // Gets the procedure address based on a Vulkan insance.
-#define GET_INSTANCE_PROC_ADDR(instance, entrypoint)                          \
+#define GET_INSTANCE_PROC_ADDR(inst, entrypoint)                              \
 {                                                                             \
-  Fp##entrypoint =                                                            \
-    (PFN_vk##entrypoint) vkGetInstanceProcAddr(instance, "vk"#entrypoint);    \
-  if (Fp##entrypoint == nullptr) {                                            \
+  fp##entrypoint =                                                            \
+    (PFN_vk##entrypoint)vkGetInstanceProcAddr(inst, "vk"#entrypoint);         \
+  if (fp##entrypoint == nullptr) {                                            \
     exit(1);                                                                  \
   }                                                                           \
 }
 
 // Gets the procedure address based on a Vulkan device
-#define GET_DEVICE_PROC_ADDR(device, entrypoint)                              \
+#define GET_DEVICE_PROC_ADDR(dev, entrypoint)                                 \
 {                                                                             \
-  Fp##entrypoint =                                                            \
-    (PFN_vk##entrypoint) vkGetDeviceProcAddr(device, "vk"#entrypoint);        \
-  if (Fp##entrypoint == nullptr) {                                            \
+  fp##entrypoint =                                                            \
+    (PFN_vk##entrypoint)vkGetDeviceProcAddr(dev, "vk"#entrypoint);            \
+  if (fp##entrypoint == nullptr) {                                            \
     exit(1);                                                                  \
   }                                                                           \
 }
@@ -59,7 +60,7 @@ typedef struct SwapChainBufferWrapper {
 // window platform for whatever OS this is running on.
 // \tparam WidgetTraits The traits for a widget.
 template <typename WsiType, typename WidgetTraits>
-class VulkanWidgetBase {
+class VulkanWidgetBase : VulkanBasic {
  public:
   using VkImageVec  = std::vector<VkImage>;               // Image container.
   using VkBufferVec = std::vector<SwapChainBuffer>;       // Buffer container.
@@ -78,13 +79,18 @@ class VulkanWidgetBase {
   // Constructor -- initializes the Vulkan variables.
   // TODO: Change UINT32_MAX
   VulkanWidgetBase() 
-  : swapChain(VK_NULL_HANDLE), queueNodeId(UINT32_MAX) {}
+    : swapChain(VK_NULL_HANDLE), 
+      queueNodeId(std::numeric_limits<uint32_t>::max()) {
+    // The base VulkanBasic class provides the badic functionality for vulkan.
+    // We then connect the vulkan basic functionality to the widget. 
+    connectVulkan();
+  }
 
   // Frees all the vulkan resources used by the swapchain.
   ~VulkanWidgetBase() {
     for (auto& buffer : buffers) 
       vkDestroyImageView(Device, buffer.view, nullptr);
-    FpDestroySwapchainKHR(Device, swapChain, nullptr);
+    fpDestroySwapchainKHR(Device, swapChain, nullptr);
     vkDestroySurfaceKHR(Instance, Surface, nullptr);
   }
 
@@ -94,20 +100,10 @@ class VulkanWidgetBase {
   // \param semaphore The present complete semaphore ...
   // \param currentBuffer The current buffer
   VkResult acquireNextImage(VkSemaphore semaphore, uint32_t* currentBuffer) {
-    return FpAcquireNextImageKHR(Device, swapChain, UINT64_MAX, semaphore, 
+    return fpAcquireNextImageKHR(Device, swapChain, 
+             std::numeric_limits<uint64_t>::max(), semaphore, 
              static_cast<VkFence>(nullptr), currentBuffer);
   }
-
-  // Connects the instance and the device and gets all the required function
-  // pointers based on the instance and the device.
-  // 
-  // \param instance The vulkan instance to use to set this class's instance
-  // \param physicalDevice The vulkan physical device to use to set this
-  // class's physical device to.
-  // \param device The Vulkan logical device to set this class's logical device
-  // to.
-  void connectVulkanParams(VkInstance instance, VkPhysicalDevice physicalDevice,
-    VkDevice device);
 
   // Creates the vulkan swap chain and gets the image sizes and widhts.
   //
@@ -137,50 +133,53 @@ class VulkanWidgetBase {
     presentInfo.swapchainCount  = 1; 
     presentInfo.pSwapchains     = &swapChain;
     presentInfo.pImageIndices   = &currentBuffer;
-    return FpQueuePresentKHR(queue, &presentInfo);
+    return fpQueuePresentKHR(queue, &presentInfo);
   }
 
  protected:
-  VkInstance       Instance;       // The vulkan instance used for the widget.
-  VkDevice         Device;         // The logical device.
-  VkPhysicalDevice PhysicalDevice; // The hardware device which draws.
   VkSurfaceKHR     Surface;        // The surface to draw to.
 
+  // Provides access to the instance for derived classes.
+  VkInstance instance() { return this->Instance; }
+
+ private:
   //---- Function pointers --------------------------------------------------//
 
   // Function pointer to allow for cheching if the WSI supports presentation.
   PFN_vkGetPhysicalDeviceSurfaceSupportKHR 
-    FpGetPhysicalDeviceSurfaceSupportKHR;   
+    fpGetPhysicalDeviceSurfaceSupportKHR;   
 
   // Function pointer to determine the capabiliteis of 
   // a surface which is required to create a swapchain.
 	PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR 
-    FpGetPhysicalDeviceSurfaceCapabilitiesKHR; 
+    fpGetPhysicalDeviceSurfaceCapabilitiesKHR; 
 
   // Function pointer to determine the swapchain
   // format-colorspace paits for a surface
 	PFN_vkGetPhysicalDeviceSurfaceFormatsKHR 
-    FpGetPhysicalDeviceSurfaceFormatsKHR;
+    fpGetPhysicalDeviceSurfaceFormatsKHR;
 
   // Function pointer to determine the supported presentation modes.
 	PFN_vkGetPhysicalDeviceSurfacePresentModesKHR 
-    FpGetPhysicalDeviceSurfacePresentModesKHR;
+    fpGetPhysicalDeviceSurfacePresentModesKHR;
 
   // Function pointer to create a swapchain.
-	PFN_vkCreateSwapchainKHR    FpCreateSwapchainKHR;   
+	PFN_vkCreateSwapchainKHR    fpCreateSwapchainKHR;   
 
   // Function pointer to destroy a swapchain.
-	PFN_vkDestroySwapchainKHR   FpDestroySwapchainKHR;    
+	PFN_vkDestroySwapchainKHR   fpDestroySwapchainKHR;    
 
   // FUnction pointer to ger the iamges for a swapchain.
-	PFN_vkGetSwapchainImagesKHR FpGetSwapchainImagesKHR;
+	PFN_vkGetSwapchainImagesKHR fpGetSwapchainImagesKHR;
 
   // Function poiner to get the next image in the 
   // swapchain so that is can be presented. 
-	PFN_vkAcquireNextImageKHR   FpAcquireNextImageKHR;
+	PFN_vkAcquireNextImageKHR   fpAcquireNextImageKHR;
 
   // Function pointer to present the queue for display.
-	PFN_vkQueuePresentKHR       FpQueuePresentKHR;
+	PFN_vkQueuePresentKHR       fpQueuePresentKHR;
+
+  //---- Base access --------------------------------------------------------//
 
   // Provides non-const access to the derived class.
   WsiType* wsiType() {
@@ -191,31 +190,32 @@ class VulkanWidgetBase {
   const WsiType* wsiType() const {
     return static_cast<const WsiType*>(this);
   }
+  
+  //---- Rest ---------------------------------------------------------------// 
+  
+  // Connects the instance and the device and gets all the required function
+  // pointers based on the instance and the device.
+  void connectVulkan();
 
   // Create the buffers for the swapchain.
   void createSwapchainBuffers(VkCommandBuffer commandBuffer);
-
 };
 
 //---- Public ---------------------------------------------------------------//
 
 template <typename WsiType, typename WidgetTraits>
-void VulkanWidgetBase<WsiType, WidgetTraits>::connectVulkanParams(
-    VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device) {
-  Instance        = instance;
-  PhysicalDevice  = physicalDevice;
-  Device          = device;
+void VulkanWidgetBase<WsiType, WidgetTraits>::connectVulkan() {
 
   // Get all the function pointers
-  GET_INSTANCE_PROC_ADDR( instance, GetPhysicalDeviceSurfaceSupportKHR      );
-  GET_INSTANCE_PROC_ADDR( instance, GetPhysicalDeviceSurfaceCapabilitiesKHR );
-  GET_INSTANCE_PROC_ADDR( instance, GetPhysicalDeviceSurfaceFormatsKHR      );
-  GET_INSTANCE_PROC_ADDR( instance, GetPhysicalDeviceSurfacePresentModesKHR );
-  GET_DEVICE_PROC_ADDR( device, CreateSwapchainKHR    );
-  GET_DEVICE_PROC_ADDR( device, DestroySwapchainKHR   );
-  GET_DEVICE_PROC_ADDR( device, GetSwapchainImagesKHR );
-  GET_DEVICE_PROC_ADDR( device, AcquireNextImageKHR   );
-  GET_DEVICE_PROC_ADDR( device, QueuePresentKHR       );
+  GET_INSTANCE_PROC_ADDR( Instance, GetPhysicalDeviceSurfaceSupportKHR      );
+  GET_INSTANCE_PROC_ADDR( Instance, GetPhysicalDeviceSurfaceCapabilitiesKHR );
+  GET_INSTANCE_PROC_ADDR( Instance, GetPhysicalDeviceSurfaceFormatsKHR      );
+  GET_INSTANCE_PROC_ADDR( Instance, GetPhysicalDeviceSurfacePresentModesKHR );
+  GET_DEVICE_PROC_ADDR( Device, CreateSwapchainKHR    );
+  GET_DEVICE_PROC_ADDR( Device, DestroySwapchainKHR   );
+  GET_DEVICE_PROC_ADDR( Device, GetSwapchainImagesKHR );
+  GET_DEVICE_PROC_ADDR( Device, AcquireNextImageKHR   );
+  GET_DEVICE_PROC_ADDR( Device, QueuePresentKHR       );
 }
 
 template <typename WsiType, typename WidgetTraits>
@@ -226,13 +226,13 @@ void VulkanWidgetBase<WsiType, WidgetTraits>::createSwapchain(
 
   // Get the surface properties and formats for the physical device.
   VkSurfaceCapabilitiesKHR surfCapabilities;
-  error = FpGetPhysicalDeviceSurfaceCapabilitiesKHR(PhysicalDevice, Surface, 
+  error = fpGetPhysicalDeviceSurfaceCapabilitiesKHR(PhysicalDevice, Surface, 
             &surfCapabilities);
   assert(!error && "Could not get surface capabilites : Fatal Error\n");
 
   // Get the available present modes for the surface and phy device.
   uint32_t numPresentModes;
-  error = FpGetPhysicalDeviceSurfacePresentModesKHR(PhysicalDevice, Surface, 
+  error = fpGetPhysicalDeviceSurfacePresentModesKHR(PhysicalDevice, Surface, 
             &numPresentModes, nullptr);
   assert(!error && "Failed to get number of present modes : Fatal Error\n");
   assert(numPresentModes > 0 && "No present modes for physical devices : "
@@ -240,7 +240,7 @@ void VulkanWidgetBase<WsiType, WidgetTraits>::createSwapchain(
 
   // Create the present modes and get the data for them.
   std::vector<VkPresentModeKHR> presentModes(numPresentModes);
-  error = FpGetPhysicalDeviceSurfacePresentModesKHR(PhysicalDevice, Surface,
+  error = fpGetPhysicalDeviceSurfacePresentModesKHR(PhysicalDevice, Surface,
             &numPresentModes, presentModes.data());
   assert(!error && "Failed to create present modes : Fatal Error\n");
 
@@ -313,16 +313,16 @@ void VulkanWidgetBase<WsiType, WidgetTraits>::createSwapchain(
   swapChainInfo.compositeAlpha        = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 
   // Create the swapchain.
-  error = FpCreateSwapchainKHR(Device, &swapChainInfo, nullptr, &swapChain);
+  error = fpCreateSwapchainKHR(Device, &swapChainInfo, nullptr, &swapChain);
   assert(!error && "Failed to creat swapchain : Fatal Error\n");
 
   // If an existing swap chain is re-created the destroy the old one.
   // Additionally, this cleans up all the presentatble images.
   if (oldSwapchain != VK_NULL_HANDLE) 
-    FpDestroySwapchainKHR(Device, oldSwapchain, nullptr);
+    fpDestroySwapchainKHR(Device, oldSwapchain, nullptr);
 
   // Get all the swapchain images.
-  error = FpGetSwapchainImagesKHR(Device, swapChain, &imageCount, nullptr);
+  error = fpGetSwapchainImagesKHR(Device, swapChain, &imageCount, nullptr);
   assert(!error && "Failed to creat swapchain images : Fatal Error\n");
 
   // Create the swapchain buffers with the vulkan image and imageview
@@ -356,7 +356,7 @@ void VulkanWidgetBase<WsiType, WidgetTraits>::initialize(
   // the swapchain and the windowing system to render the widget.
   std::vector<VkBool32> supportsPresentation(queueCount);
   for (uint32_t i = 0; i < queueCount; ++i) 
-    FpGetPhysicalDeviceSurfaceSupportKHR(PhysicalDevice, i, Surface,
+    fpGetPhysicalDeviceSurfaceSupportKHR(PhysicalDevice, i, Surface,
       &supportsPresentation[i]);
 
   // Search for a graphics and a present queue in the vector of 
@@ -401,7 +401,7 @@ void VulkanWidgetBase<WsiType, WidgetTraits>::initialize(
 
   // Get a list of supported surface formats
   uint32_t formatCount;
-  error = FpGetPhysicalDeviceSurfaceFormatsKHR(PhysicalDevice, Surface,
+  error = fpGetPhysicalDeviceSurfaceFormatsKHR(PhysicalDevice, Surface,
             &formatCount, nullptr);
   assert(!error && "Failed to get the number of surface formats : " &&
          "Fatal Error\n");
@@ -409,7 +409,7 @@ void VulkanWidgetBase<WsiType, WidgetTraits>::initialize(
          && "Fatal Error\n");
 
   std::vector<VkSurfaceFormatKHR> surfaceFormats(formatCount);
-  error = FpGetPhysicalDeviceSurfaceFormatsKHR(PhysicalDevice,Surface, 
+  error = fpGetPhysicalDeviceSurfaceFormatsKHR(PhysicalDevice,Surface, 
             &formatCount, surfaceFormats.data());
   assert(!error && "Failed to create surface formats : Fatal Error\n");
 
@@ -476,7 +476,7 @@ void VulkanWidgetBase<WsiType, WidgetTraits>::createSwapchainBuffers(
   // using VulkanWidget = VulkanWidgetWindows;
 #elif defined(__linux__)
   #include "vulkan_widget_linux.h"
-  using VulkanWidget = VulkanWidgetLinux;
+  using DrawableWidget = VulkanWidgetLinux;
 #elif defined(__ANDROID__)
   // #include "vulkan_widget_android.h"
   // using VulkanWidget = VulkanWidgetAndroid;

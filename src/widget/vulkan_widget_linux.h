@@ -40,7 +40,7 @@ class VulkanWidgetLinux :
     surfaceInfo.sType      = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
     surfaceInfo.connection = connection;
     surfaceInfo.window     = window;
-    error = vkCreateXcbSurfaceKHR(this->Instance, &surfaceInfo, nullptr, 
+    error = vkCreateXcbSurfaceKHR(this->instance(), &surfaceInfo, nullptr, 
               &this->Surface);
     assert(!error && "Failed to create an XCB surface : Fatal Error\n");
   }

@@ -32,6 +32,13 @@ void transformImageLayout(VkCommandBuffer commandBuffer, VkImage image,
   VkImageAspectFlags aspectFlags, VkImageLayout oldImageLayout, 
   VkImageLayout newImageLayout);
 
+// Gets all supported depth formats for a physical device. Returns false if
+// there are no valid depth formats.
+//
+// \param physicalDevice The physical device to get the depth formats for.
+// \param depthFormat The depth formats.
+VkBool32 getSupportedDepthFormat(VkPhysicalDevice physicalDevice,
+  VkFormat* depthFormat);
 
 namespace init {
 

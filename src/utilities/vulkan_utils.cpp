@@ -14,6 +14,7 @@
 //---------------------------------------------------------------------------//
 
 #include "vulkan_utils.h"
+#include <vector>
 
 namespace vkutil {
 
@@ -81,6 +82,29 @@ inline void checkDestinationLayouts(VkImageMemoryBarrier& imageMemoryBarrier,
 }
 
 }  // annonymous namespace
+
+VkBool32 getSupportedDepthFormat(VkPhysicalDevice physicalDevice,
+    VkFormat* depthFormat) {
+  // All the depth formats may be optional, so a suitable depth format
+  // with the highest precision packing needs to be found.
+  std::vector<VkFormat> depthFormats = { VK_FORMAT_D32_SFLOAT_S8_UINT ,
+                                         VK_FORMAT_D32_SFLOAT         ,
+                                         VK_FORMAT_D24_UNORM_S8_UINT  ,
+                                         VK_FORMAT_D16_UNORM_S8_UINT  ,
+                                         VK_FORMAT_D16_UNORM          };
+
+  for (auto& format : depthFormats) {
+    VkFormatProperties formatProperties;
+    vkGetPhysicalDeviceFormatProperties(physicalDevice, format, 
+      &formatProperties);
+    if (formatProperties.optimalTilingFeatures & 
+        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+      *depthFormat = format;
+      return true;
+    }
+  }
+  return false;
+}
 
 void transformImageLayout(VkCommandBuffer commandBuffer, VkImage image, 
     VkImageAspectFlags aspectMask, VkImageLayout oldImageLayout, 

@@ -46,24 +46,26 @@ class VulkanBasic {
    // param: requestedQueues The queues to use
    VkResult createDevice(VkDeviceQueueCreateInfo requestedQueues);
 
- private:
-   uint32_t         GraphicsQueueId;// The index of the graphics queue 
-   VkInstance       Instance;       // Stores per-application state
-   VkPhysicalDevice PhysicalDevice; // Device (CPU | GPU) for vulkan to use
-   VkPhysicalDeviceMemoryProperties
+ protected:
+  uint32_t         GraphicsQueueId; // The index of the graphics queue 
+  VkInstance       Instance;        // Stores per-application state
+  VkPhysicalDevice PhysicalDevice;  // Device (CPU | GPU) for vulkan to use
+  VkPhysicalDeviceMemoryProperties
                     DeviceMemProps; // Memory properties of the device
-   VkDevice         Device;         // Logical device -- application's view
-   VkQueue          Queue;          // Handle to device graphics queue
+  VkDevice         Device;          // Logical device -- application's view
+  VkQueue          Queue;           // Handle to device graphics queue
+  VkFormat         DepthFormat;     // Format for depth buffer.
+  VkFormat         ColorFormat;     // Format for the color buffer.
 
-   // Finds a queue which supports graphics operations
-   //
-   // Postconditions : A graphics queue is found
-   void findGraphicsQueue();
+  // Finds a queue which supports graphics operations
+  //
+  // Postconditions : A graphics queue is found
+  void findGraphicsQueue();
 
-   // Sets the physical device to the first available one -- edit this to
-   // provide more functionality.
-   //
-   // Preconditions : VkInstance needs to have been initialized
+  // Sets the physical device to the first available one -- edit this to 
+  // provide more functionality.
+  //
+  // Preconditions : VkInstance needs to have been initialized
    void setPhysicalDevice();
 };
 

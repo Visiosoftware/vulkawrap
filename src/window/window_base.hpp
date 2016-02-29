@@ -20,7 +20,6 @@
 #define VULKAN_WINDOW_WINDOW_BASE_HPP
 
 #include "window_traits.h"
-#include "../vulkan/vulkan_basic.h"
 #include "../widget/vulkan_widget_base.hpp"
 
 #include <string>
@@ -91,6 +90,12 @@ class WindowBase {
   const OsSpecificWindow* osSpecificWindow() const {
     return static_cast<const OsSpecificWindow*>(this);
   }
+
+ private:
+  // Here a vulkan widget is added to the window which can render using vulkan
+  // -- this would usually be added to hold multiple widgets, but for these
+  // examples the only widget is going to be a vulkan one.
+  DrawableWidget VulkanWidget;
 };
 
 // Aliases for a window based on the platform which is being used, since 
