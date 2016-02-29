@@ -22,7 +22,7 @@
 // base class if the development platform is linux -- therefore no header
 // guards.
 
-#include "window_traits_linux.h"
+#include "window_traits.h"
 #include <iostream>
 #include <stdlib.h>
 

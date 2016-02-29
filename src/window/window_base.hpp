@@ -19,10 +19,7 @@
 #ifndef VULKAN_WINDOW_WINDOW_BASE_HPP
 #define VULKAN_WINDOW_WINDOW_BASE_HPP
 
-#if defined(_WIN32)
-#else 
-#include "window_traits_linux.h"
-#endif
+#include "window_traits.h"
 #include "../vulkan/vulkan_basic.h"
 #include "../widget/vulkan_widget_base.hpp"
 

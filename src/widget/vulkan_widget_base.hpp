@@ -17,9 +17,11 @@
 #ifndef VULKAN_WIDGET_VULKAN_WIDGET_BASE_HPP
 #define VULKAN_WIDGET_VULKAN_WIDGET_BASE_HPP
 
+#include "widget_traits.h"
 #include "../utilities/vulkan_utils.h"
 #include <cassert>
 #include <cstdlib>
+#include <limits>
 
 //---- Utility Macros -------------------------------------------------------//
 
@@ -55,12 +57,14 @@ typedef struct SwapChainBufferWrapper {
 //
 // \tparam WsiType The Window System Integration which is used -- so the native
 // window platform for whatever OS this is running on.
-template <typename WsiType>
+// \tparam WidgetTraits The traits for a widget.
+template <typename WsiType, typename WidgetTraits>
 class VulkanWidgetBase {
  public:
-  // Alias for vector of images
-  using VkImageVec  = std::vector<VkImage>;           // Image container alias.
-  using VkBufferVec = std::vector<SwapChainBuffer>;   // Buffer container.
+  using VkImageVec  = std::vector<VkImage>;               // Image container.
+  using VkBufferVec = std::vector<SwapChainBuffer>;       // Buffer container.
+  using HandleType  = typename WidgetTraits::HandleType;  // Handle for window.
+  using WindowType  = typename WidgetTraits::WindowType;  // Type of window
 
   // TODO: Read doc and comment these
   VkFormat        colorFormat;
@@ -75,6 +79,24 @@ class VulkanWidgetBase {
   // TODO: Change UINT32_MAX
   VulkanWidgetBase() 
   : swapChain(VK_NULL_HANDLE), queueNodeId(UINT32_MAX) {}
+
+  // Frees all the vulkan resources used by the swapchain.
+  ~VulkanWidgetBase() {
+    for (auto& buffer : buffers) 
+      vkDestroyImageView(Device, buffer.view, nullptr);
+    FpDestroySwapchainKHR(Device, swapChain, nullptr);
+    vkDestroySurfaceKHR(Instance, Surface, nullptr);
+  }
+
+  // Gets the next iamge in the swapchain. Results the result of the operation.
+  //
+  // TODO: Add more detail here
+  // \param semaphore The present complete semaphore ...
+  // \param currentBuffer The current buffer
+  VkResult acquireNextImage(VkSemaphore semaphore, uint32_t* currentBuffer) {
+    return FpAcquireNextImageKHR(Device, swapChain, UINT64_MAX, semaphore, 
+             static_cast<VkFence>(nullptr), currentBuffer);
+  }
 
   // Connects the instance and the device and gets all the required function
   // pointers based on the instance and the device.
@@ -95,7 +117,30 @@ class VulkanWidgetBase {
   void createSwapchain(VkCommandBuffer commandBuffer, uint32_t* width, 
     uint32_t* height);
 
- private:
+  // Initializes the widget -- specifically this initializes the vulkan
+  // surface by calling the platform specific implemenatation and then 
+  // performing the non platform specific initialization.
+  //
+  // \param window The window to initialize the surface for.
+  // \param handle The handle for the window.
+  void initialize(WindowType window, HandleType handle = nullptr);
+
+  // Presents the current image to the present queue. Returns the result of the
+  // operation.
+  //
+  // \param queue The queue to present to.
+  // \param currentBuffer The current buffer.
+  VkResult queuePresent(VkQueue queue, uint32_t currentBuffer) {
+    VkPresentInfoKHR presentInfo = {};
+    presentInfo.sType           = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.pNext           = nullptr;
+    presentInfo.swapchainCount  = 1; 
+    presentInfo.pSwapchains     = &swapChain;
+    presentInfo.pImageIndices   = &currentBuffer;
+    return FpQueuePresentKHR(queue, &presentInfo);
+  }
+
+ protected:
   VkInstance       Instance;       // The vulkan instance used for the widget.
   VkDevice         Device;         // The logical device.
   VkPhysicalDevice PhysicalDevice; // The hardware device which draws.
@@ -154,9 +199,9 @@ class VulkanWidgetBase {
 
 //---- Public ---------------------------------------------------------------//
 
-template <typename WsiType>
-void VulkanWidgetBase<WsiType>::connectVulkanParams(VkInstance instance, 
-    VkPhysicalDevice physicalDevice, VkDevice device) {
+template <typename WsiType, typename WidgetTraits>
+void VulkanWidgetBase<WsiType, WidgetTraits>::connectVulkanParams(
+    VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device) {
   Instance        = instance;
   PhysicalDevice  = physicalDevice;
   Device          = device;
@@ -173,9 +218,9 @@ void VulkanWidgetBase<WsiType>::connectVulkanParams(VkInstance instance,
   GET_DEVICE_PROC_ADDR( device, QueuePresentKHR       );
 }
 
-template <typename WsiType>
-void VulkanWidgetBase<WsiType>::createSwapchain(VkCommandBuffer commandBuffer, 
-    uint32_t* width, uint32_t* height) {
+template <typename WsiType, typename WidgetTraits>
+void VulkanWidgetBase<WsiType, WidgetTraits>::createSwapchain(
+    VkCommandBuffer commandBuffer, uint32_t* width, uint32_t* height) {
   VkResult       error;
   VkSwapchainKHR oldSwapchain = swapChain;
 
@@ -285,10 +330,105 @@ void VulkanWidgetBase<WsiType>::createSwapchain(VkCommandBuffer commandBuffer,
   
 }
 
+template <typename WsiType, typename WidgetTraits>
+void VulkanWidgetBase<WsiType, WidgetTraits>::initialize(
+    typename WidgetTraits::WindowType window, 
+    typename WidgetTraits::HandleType handle) {
+  VkResult error;
+
+  // First initialize the platform specific window with vulkan.
+  wsiType()->initialize(window, handle);
+
+  // Now do everything that is not platform specific
+  
+  // Get the available queue family properties.
+  uint32_t queueCount;
+  vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueCount, 
+    nullptr);
+  assert(queueCount > 1 && "No queue family properties found : Fatal Error\n");
+
+  std::vector<VkQueueFamilyProperties> queueProperties(queueCount);
+  vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueCount,
+    queueProperties.data());
+
+  // Iterate over each of the queues and check if the queue can present.
+  // Find a queue which does support presentation which will be used with 
+  // the swapchain and the windowing system to render the widget.
+  std::vector<VkBool32> supportsPresentation(queueCount);
+  for (uint32_t i = 0; i < queueCount; ++i) 
+    FpGetPhysicalDeviceSurfaceSupportKHR(PhysicalDevice, i, Surface,
+      &supportsPresentation[i]);
+
+  // Search for a graphics and a present queue in the vector of 
+  // queue families and try to find one which supports both.
+  uint32_t graphicsQueueId = std::numeric_limits<uint32_t>::max();
+  uint32_t presentQueueId  = std::numeric_limits<uint32_t>::max();
+  for (uint32_t i = 0; i < queueCount; ++i) {
+    if ((queueProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) {
+      if (supportsPresentation[i] == VK_TRUE) {
+        graphicsQueueId = i;
+        presentQueueId  = i;
+        break;
+      }
+    
+      if (graphicsQueueId == std::numeric_limits<uint32_t>::max()) 
+        graphicsQueueId = i;
+    }
+  }
+
+  // If there is no queue which supports both graphics and 
+  // presentation then find one which supports presentation.
+  if (presentQueueId == std::numeric_limits<uint32_t>::max()) {
+    for (uint32_t i = 0; i < queueCount; ++i) {
+      if (supportsPresentation[i] != VK_TRUE) 
+        continue;
+      presentQueueId = i; 
+      break;
+    }
+  }
+
+  // If either a graphics or present queue has not been 
+  // found, then we cannot continue, so we terminate.
+  // TODO: Add support for different graphics and present queues.
+  assert((graphicsQueueId != std::numeric_limits<uint32_t>::max()  ||
+          presentQueueId  != std::numeric_limits<uint32_t>::max()) &&
+          "Graphics or present queue not found : Fatal Error\n");
+  assert(graphicsQueueId == presentQueueId && "Graphics and present queue "
+         && "do not match : Fatal Error\n");
+
+  // No failure, so the class queue node id can be set.
+  queueNodeId = graphicsQueueId;
+
+  // Get a list of supported surface formats
+  uint32_t formatCount;
+  error = FpGetPhysicalDeviceSurfaceFormatsKHR(PhysicalDevice, Surface,
+            &formatCount, nullptr);
+  assert(!error && "Failed to get the number of surface formats : " &&
+         "Fatal Error\n");
+  assert(formatCount > 0 && "Failed to find any supported surface formats " 
+         && "Fatal Error\n");
+
+  std::vector<VkSurfaceFormatKHR> surfaceFormats(formatCount);
+  error = FpGetPhysicalDeviceSurfaceFormatsKHR(PhysicalDevice,Surface, 
+            &formatCount, surfaceFormats.data());
+  assert(!error && "Failed to create surface formats : Fatal Error\n");
+
+  // If the format list has only a single entry and
+  // it is VK_FORMAT_UNDEFINED then the format which
+  // is assumed is VK_FORMAT_B8G8R8A8_UNORM.
+  if (formatCount == 1 && (surfaceFormats[0].format == VK_FORMAT_UNDEFINED)) 
+    colorFormat = VK_FORMAT_B8G8R8A8_UNORM;
+  else 
+    colorFormat = surfaceFormats[0].format;
+
+  colorSpace = surfaceFormats[0].colorSpace;
+
+}
+
 //---- Private --------------------------------------------------------------//
 
-template <typename WsiType>
-void VulkanWidgetBase<WsiType>::createSwapchainBuffers(
+template <typename WsiType, typename WidgetTraits>
+void VulkanWidgetBase<WsiType, WidgetTraits>::createSwapchainBuffers(
     VkCommandBuffer commandBuffer) {
   VkResult error;
   buffers.resize(imageCount);
@@ -327,6 +467,20 @@ void VulkanWidgetBase<WsiType>::createSwapchainBuffers(
     assert(!error && "Failed to create image view for image : Fatal Error\n"); 
   }
 }
+
+//---- Alias's --------------------------------------------------------------//
+
+// Aliases for platform specific widgets.
+#if defined(_WIN32)
+  // #include "vulkan_widget_windows.h"
+  // using VulkanWidget = VulkanWidgetWindows;
+#elif defined(__linux__)
+  #include "vulkan_widget_linux.h"
+  using VulkanWidget = VulkanWidgetLinux;
+#elif defined(__ANDROID__)
+  // #include "vulkan_widget_android.h"
+  // using VulkanWidget = VulkanWidgetAndroid;
+#endif
   
 #endif  // VULKAN_WIDGET_VULKAN_WIDGET_BASE_HPP
 

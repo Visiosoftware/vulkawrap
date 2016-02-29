@@ -1,4 +1,4 @@
-//---- src/window/window_traits_linux.g - Traits for linux windows ----------//
+//---- src/window/window_traits. - Traits for window types ------------------//
 //
 //                        Vulkan Examples/Tutorials
 //                          
@@ -12,21 +12,27 @@
 //
 // ========================================================================= //
 //
-// \file   window_traits_linux.h
-// \brief  Defines traits for a window class which are specific to linux.
+// \file   window_traits.h
+// \brief  Defines traits for a window class.
 //
 //---------------------------------------------------------------------------//
 
-#ifndef VULKAN_WINDOW_WINDOW_TRAITS_LINUX_H 
-#define VULKAN_WINDOW_WINDOW_TRAITS_LINUX_H 
+#ifndef VULKAN_WINDOW_WINDOW_TRAITS_H
+#define VULKAN_WINDOW_WINDOW_TRAITS_H
 
 #include <xcb/xcb.h>
 
 struct WindowTraits {
+#if defined(_WIN32)
+
+#elif defined(__linux__)
+
   /// Alias for the type of window.
   using WindowType = xcb_window_t;
+
+#endif
 };
 
-#endif  // VULKAN_WINDOW_WINDOW_TRAITS_LINUX_H 
+#endif  // VULKAN_WINDOW_WINDOW_TRAITS_H
 
 
