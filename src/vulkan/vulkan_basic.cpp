@@ -18,12 +18,21 @@
 #include <cassert>
 #include <iostream>
 
+namespace {
+
+unsigned constexpr hash(char const* input) {
+  return *input ? static_cast<unsigned int>(*input) + 33 * hash(input + 1) 
+                : 5381;
+}
+
+}  // annonymous namespace
+
 //---- Public ---------------------------------------------------------------//
 
 // TODO : Update this so that you can set the name and add windowing extensions
 //      : Add in non fatal error handling
 VulkanBasic::VulkanBasic()
-: GraphicsQueueId(0) {
+: GraphicsQueueId(0), SetupCmndBuffer(VK_NULL_HANDLE) {
   VkResult error = createInstance();
   assert(!error && "Could not create Vulkan instance : Fatal Error\n");
 
@@ -53,6 +62,27 @@ VulkanBasic::VulkanBasic()
          && "Fatal Error\n");
 }
 
+void VulkanBasic::setup(uint32_t queueNodeId) {
+  createCommandPool(queueNodeId);
+  createSetupCommandBuffer();
+  startBufferRecording(buffers::setupBuffer);
+}
+
+void VulkanBasic::startBufferRecording(const char* bufferType) {
+  VkResult result;
+  VkCommandBufferBeginInfo cmndBufferInfo = {};
+  cmndBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+  switch(hash(bufferType)) {
+    case hash(buffers::setupBuffer) : {
+      result = vkBeginCommandBuffer(SetupCmndBuffer, &cmndBufferInfo);
+    } break;
+    default : break;
+  }
+  assert(!result && "Failed to begin command buffer recording : "
+         && "Fatal Error\n");
+}
+
 VkResult VulkanBasic::createInstance(const char* appName, 
     const char* engineName, const std::vector<const char*>& extensions) {
   // Set the application properties
@@ -62,7 +92,7 @@ VkResult VulkanBasic::createInstance(const char* appName,
   appInfo.pEngineName       = engineName;
 
   // Might need workaround here for invalid vulkan version
-  //appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 2);
+  appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 2);
  
   // Create a vector with the default extensions 
   // and then add the user defined extensions
@@ -106,8 +136,8 @@ VkResult VulkanBasic::createDevice(VkDeviceQueueCreateInfo requestedQueues) {
 
 void VulkanBasic::createCommandPool(uint32_t queueNodeId) {
   VkCommandPoolCreateInfo cmndPoolInfo = {};
-  cmndPoolInfo.sType  = VULKAN_STRUCTURE_COMMAND_POOL_CREATE_INFO;
-  cmndPoolInfo.flags  = VK_COMMAND_POOL_CREATE_REST_COMMAND_BUFFER_BIT;
+  cmndPoolInfo.sType  = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+  cmndPoolInfo.flags  = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
   cmndPoolInfo.queueFamilyIndex = queueNodeId;
   VkResult result = vkCreateCommandPool(Device, &cmndPoolInfo, nullptr,
     &CmndPool);
@@ -119,10 +149,13 @@ void VulkanBasic::createCommandBuffers(uint32_t numBuffers) {
 
   // Add util for command buffer initialization
   VkCommandBufferAllocateInfo cmndBufferAllocInfo =
-    vkutil::init::commandBuffferAllocateInfo(CmndPool, VK_BUFFER_LEVEL_PRIMARY, 
-      static_cast<uint32_t>(DrawCmndBuffers.size()));
+    vkutil::init::commandBufferAllocateInfo(
+      CmndPool                                    , 
+      VK_COMMAND_BUFFER_LEVEL_PRIMARY             , 
+      static_cast<uint32_t>(DrawCmndBuffers.size())
+    );
 
-  VkResult error = vkAllocateCommandBuffers(Device, /*&cmnsBufferAllocInfo,*/ 
+  VkResult error = vkAllocateCommandBuffers(Device, &cmndBufferAllocInfo,
                      DrawCmndBuffers.data());
   assert(!error && "Failed to allocate command buffers : Fatal Error\n");
 
@@ -130,13 +163,13 @@ void VulkanBasic::createCommandBuffers(uint32_t numBuffers) {
   // a post present image memory barrier.
   cmndBufferAllocInfo.commandBufferCount = 1;
 
-  error = vkAllocateCommandBuffers(Device, /*&cmndBufferAllocInfo*/, 
+  error = vkAllocateCommandBuffers(Device, &cmndBufferAllocInfo, 
             &PpCmndBuffer);
   assert(!error && "Failed to allocate post present command buffer " 
          && "Fatal Error\n");
 }
 
-void VulkanBasic::destroyComandBuffers() {
+void VulkanBasic::destroyCommandBuffers() {
   vkFreeCommandBuffers(Device, CmndPool, 
     static_cast<uint32_t>(DrawCmndBuffers.size()), DrawCmndBuffers.data());
   vkFreeCommandBuffers(Device, CmndPool, 1, &PpCmndBuffer);
@@ -185,4 +218,19 @@ void VulkanBasic::setPhysicalDevice() {
 
   // Set the physical device to the first one in the list for now
   PhysicalDevice = physicalDevices[0];
+}
+
+void VulkanBasic::createSetupCommandBuffer() {
+  if (SetupCmndBuffer != VK_NULL_HANDLE) {
+    vkFreeCommandBuffers(Device, CmndPool, 1, &SetupCmndBuffer);
+    SetupCmndBuffer = VK_NULL_HANDLE;
+  }
+
+  VkCommandBufferAllocateInfo cmndBufferAllocInfo =
+    vkutil::init::commandBufferAllocateInfo(CmndPool,
+      VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
+
+  VkResult result = vkAllocateCommandBuffers(Device, &cmndBufferAllocInfo, 
+                      &SetupCmndBuffer);
+  assert(!result && "Failed to allocate command buffer : Fatal Error\n");
 }

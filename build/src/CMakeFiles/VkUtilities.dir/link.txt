@@ -1,0 +1,1 @@
+/usr/bin/c++  -fPIC -std=c++14 -g -pedantic -Wall -DVK_USE_PLATFORM_XCB_KHR  -shared -Wl,-soname,libVkUtilities.so -o libVkUtilities.so CMakeFiles/VkUtilities.dir/utilities/vulkan_utils.cpp.o 

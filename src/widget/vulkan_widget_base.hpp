@@ -84,6 +84,9 @@ class VulkanWidgetBase : VulkanBasic {
     // The base VulkanBasic class provides the badic functionality for vulkan.
     // We then connect the vulkan basic functionality to the widget. 
     connectVulkan();
+    
+    // Setup the VulkanBasic base class 
+    this->setup(queueNodeId);
   }
 
   // Frees all the vulkan resources used by the swapchain.
@@ -107,11 +110,9 @@ class VulkanWidgetBase : VulkanBasic {
 
   // Creates the vulkan swap chain and gets the image sizes and widhts.
   //
-  // \param commandBuffer The vulkan command buffer.
   // \param width The image width.
   // \param height The image height.
-  void createSwapchain(VkCommandBuffer commandBuffer, uint32_t* width, 
-    uint32_t* height);
+  void createSwapchain(uint32_t* width, uint32_t* height);
 
   // Initializes the widget -- specifically this initializes the vulkan
   // surface by calling the platform specific implemenatation and then 
@@ -137,7 +138,7 @@ class VulkanWidgetBase : VulkanBasic {
   }
 
  protected:
-  VkSurfaceKHR     Surface;        // The surface to draw to.
+  VkSurfaceKHR Surface;  // The surface to draw to.
 
   // Provides access to the instance for derived classes.
   VkInstance instance() { return this->Instance; }
@@ -219,10 +220,11 @@ void VulkanWidgetBase<WsiType, WidgetTraits>::connectVulkan() {
 }
 
 template <typename WsiType, typename WidgetTraits>
-void VulkanWidgetBase<WsiType, WidgetTraits>::createSwapchain(
-    VkCommandBuffer commandBuffer, uint32_t* width, uint32_t* height) {
-  VkResult       error;
-  VkSwapchainKHR oldSwapchain = swapChain;
+void VulkanWidgetBase<WsiType, WidgetTraits>::createSwapchain(uint32_t* width, 
+    uint32_t* height) {
+  VkResult        error;
+  VkSwapchainKHR  oldSwapchain  = swapChain;
+  VkCommandBuffer commandBuffer = this->SetupCmndBuffer; 
 
   // Get the surface properties and formats for the physical device.
   VkSurfaceCapabilitiesKHR surfCapabilities;

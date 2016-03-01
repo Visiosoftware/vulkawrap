@@ -19,6 +19,13 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 
+// Defines the possible command buffers to atrt recording
+namespace buffers {
+
+char constexpr* setupBuffer = "Setup Buffer";
+
+} // namespace buffers 
+
 // Class which does some basic setup for vulkan.
 class VulkanBasic {
  public:
@@ -35,6 +42,17 @@ class VulkanBasic {
    // Any fatal errors terminate the application, non terminal errors are left
    // alone for the moment
    VulkanBasic();
+
+   // Sets up the basic vulkan functionality.
+   //
+   // \param queueNodeId The index of the node of the queue to use.
+   void setup(uint32_t queueNodeId);
+
+   // Makes a command buffer start recording.
+   //
+   // \param bufferType The type of command buffer to start recording for. The
+   // buffer type can be any of the buffers defined in the buffers namespace.
+   void startBufferRecording(const char* bufferType);
 
    // Creates the vulkan instance.
    //
@@ -62,6 +80,7 @@ class VulkanBasic {
   VkCommandPool    CmndPool;        // Command buffer pool.
   VkCommandBuffer  DrawCmndBuffer;  // Command buffer for setup.
   VkCommandBuffer  PpCmndBuffer;    // For submitting a post present barrier.
+  VkCommandBuffer  SetupCmndBuffer; // Command buffer for setup.
   CmndBufferVec    DrawCmndBuffers; // Command buffers for rendering.
 
   // Finds a queue which supports graphics operations
@@ -73,11 +92,8 @@ class VulkanBasic {
   // provide more functionality.
   //
   // Preconditions : VkInstance needs to have been initialized
-   void setPhysicalDevice();
+  void setPhysicalDevice();
 
-  // Creates a new command pool to store command buffers.
-  void creatCommandPool();
- 
   // Creates the command buffers.
   //
   // \param numBuffers The number of buffers to create.
@@ -90,6 +106,10 @@ class VulkanBasic {
   //
   // \param queueNodeId The index of the queue node to use.
   void createCommandPool(uint32_t queueNodeId);
+
+  // Creates the command buffer for setup commands.
+  void createSetupCommandBuffer();
+
 };
 
 #endif // VULKAN_VULKAN_VULKAN_BASIC_H
