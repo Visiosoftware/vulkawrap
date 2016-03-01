@@ -22,6 +22,9 @@
 // Class which does some basic setup for vulkan.
 class VulkanBasic {
  public:
+   // Alias for a command buffer container.
+   using CmndBufferVec = std::vector<VkCommandBuffer>;
+
    // Constructor which:
    //  - Creates a VulkanInstance
    //  - Enumerates physical devices and uses the first one
@@ -51,11 +54,15 @@ class VulkanBasic {
   VkInstance       Instance;        // Stores per-application state
   VkPhysicalDevice PhysicalDevice;  // Device (CPU | GPU) for vulkan to use
   VkPhysicalDeviceMemoryProperties
-                    DeviceMemProps; // Memory properties of the device
+                   DeviceMemProps;  // Memory properties of the device
   VkDevice         Device;          // Logical device -- application's view
   VkQueue          Queue;           // Handle to device graphics queue
   VkFormat         DepthFormat;     // Format for depth buffer.
   VkFormat         ColorFormat;     // Format for the color buffer.
+  VkCommandPool    CmndPool;        // Command buffer pool.
+  VkCommandBuffer  DrawCmndBuffer;  // Command buffer for setup.
+  VkCommandBuffer  PpCmndBuffer;    // For submitting a post present barrier.
+  CmndBufferVec    DrawCmndBuffers; // Command buffers for rendering.
 
   // Finds a queue which supports graphics operations
   //
@@ -67,6 +74,22 @@ class VulkanBasic {
   //
   // Preconditions : VkInstance needs to have been initialized
    void setPhysicalDevice();
+
+  // Creates a new command pool to store command buffers.
+  void creatCommandPool();
+ 
+  // Creates the command buffers.
+  //
+  // \param numBuffers The number of buffers to create.
+  void createCommandBuffers(uint32_t numBuffers);
+
+  // Destroys the command buffers.
+  void destroyCommandBuffers();
+
+  // Creates a new command pool to store command buffers.
+  //
+  // \param queueNodeId The index of the queue node to use.
+  void createCommandPool(uint32_t queueNodeId);
 };
 
 #endif // VULKAN_VULKAN_VULKAN_BASIC_H

@@ -51,6 +51,16 @@ inline VkImageMemoryBarrier imageMemoryBarrier() {
   return imageMemoryBarrier;
 }
 
+inline VkCommandBufferAllocateInfo commandBufferAllocateInfo(
+    VkCommandPool commandPool, VkCommandBufferLevel level, uint32_t buffCount) {
+  VkCommandBufferAllocateInfo cmndBufferAllocInfo = {};
+  cmndBufferAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+  cmndBufferAllocInfo.commandPool        = commandPool;
+  cmndBufferAllocInfo.level              = level;
+  cmndBufferAllocInfo.commandBufferCount = buffCount;
+  return cmndBufferAllocInfo;
+} 
+
 } // namespace init
 } // namespace vkutil
 
