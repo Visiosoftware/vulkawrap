@@ -41,8 +41,9 @@ include_directories ( ${VulkanExamples_SOURCE_DIR}/src
 
 add_library(VkBasic SHARED vulkan/vulkan_basic.cpp)
 add_library(VkUtilities SHARED utilities/vulkan_utils.cpp)
+add_library(VkBase SHARED vulkan/vulkan_base.cpp)
 link_libraries(xcb ${VULKAN_LIB})
-target_link_libraries (VkBasic VkUtilities ${VULKAN_LIB})
+target_link_libraries (VkBasic VkUtilities VkBase ${VULKAN_LIB})
 
 # --------------------   Set Example Bin Directory       -------------------- #
 

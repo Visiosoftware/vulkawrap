@@ -34,9 +34,11 @@ struct StencilBuffer {
 
 //---- Aliases --------------------------------------------------------------//
 
-using VkCmndBufferVec  = std::vector<VkCommandBuffer>;
-using VkFramebufferVec = std::vector<VkFramebuffer>; 
-using VkImageVec       = std::vector<VkImage>;
-using VkScBufferVec    = std::vector<SwapchainBuffer>;
+using VkCmndBufferVec         = std::vector<VkCommandBuffer>;
+using VkFramebufferVec        = std::vector<VkFramebuffer>; 
+using VkImageVec              = std::vector<VkImage>;
+using VkPhysDeviceVec         = std::vector<VkPhysicalDevice>;
+using VhPhysDeviceMemPropVec  = std::vector<VkPhysicalDeviceMemoryProperties>;
+using VkScBufferVec           = std::vector<SwapchainBuffer>;
 
 #endif  // VULKAN_VULKAN_TYPE_WRAPPERS_H

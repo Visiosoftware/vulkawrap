@@ -18,8 +18,11 @@
 //---------------------------------------------------------------------------//
 
 #include "../window/window_base.hpp"
+#include "../vulkan/vulkan_base.h"
 
 int main() {
+
+  VulkanBase vkBase;
 
   // Create a new window using the default size.
   Window window;

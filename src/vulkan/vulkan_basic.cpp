@@ -71,7 +71,10 @@ void VulkanBasic::setup(uint32_t width, uint32_t height, uint32_t queueNodeId,
   setupDepthStencil(width, height);
   setupRenderPass();
   createPipelineCache();
-  // setupFrameBuffers(width, height, swapchainBuffers.size());
+  setupFramebuffers(width, height, swapchainBuffers);
+
+  flushSetupCommandBuffer();      // Write and then remove setup buffer.
+  // CreateSetupCommandBuffer();   // Recreate setup buffer for other class
 }
 
 void VulkanBasic::startBufferRecording(const char* bufferType) {
@@ -241,6 +244,31 @@ void VulkanBasic::createSetupCommandBuffer() {
   assert(!result && "Failed to allocate command buffer : Fatal Error\n");
 }
 
+void VulkanBasic::flushSetupCommandBuffer() {
+  VkResult result;
+
+  if (SetupCmndBuffer == VK_NULL_HANDLE) 
+    std::cerr << "Error : Attempt to flush setup buffer failed\n";
+
+  result = vkEndCommandBuffer(SetupCmndBuffer); 
+  assert(!result && "Failed to end setup command buffer : Fatal Error\n");
+
+  VkSubmitInfo submitInfo = {};
+  submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submitInfo.commandBufferCount = 1;
+  submitInfo.pCommandBuffers    = &SetupCmndBuffer;
+
+  result = vkQueueSubmit(Queue, 1, &submitInfo, VK_NULL_HANDLE);
+  assert(!result && "Failed to submit buffer to queue : Fatal Error\n");
+  
+  result = vkQueueWaitIdle(Queue);
+  assert(!result && "Failed to make queue wait idle\n");
+
+  vkFreeCommandBuffers(Device, CmndPool, 1, &SetupCmndBuffer);
+  SetupCmndBuffer = VK_NULL_HANDLE; // TODO: Check if necessary.
+}
+
+
 void VulkanBasic::setupDepthStencil(uint32_t width, uint32_t height) {
   VkResult result;
 
@@ -314,7 +342,7 @@ void VulkanBasic::createPipelineCache() {
   assert(!result && "Failed to create pipeline cache : Fatal Error\n");
 }
 
-void VulkanBasic::setupFrameBuffer(uint32_t width, uint32_t height,
+void VulkanBasic::setupFramebuffers(uint32_t width, uint32_t height,
     const VkScBufferVec& swapchainBuffers) {
   VkImageView attachments[2];
 

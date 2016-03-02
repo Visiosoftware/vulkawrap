@@ -116,6 +116,10 @@ class VulkanBasic {
   // Creates the command buffer for setup commands.
   void createSetupCommandBuffer();
 
+  // Finalizes the setup command buffer, submits it to the queue and removes
+  // it.
+  void flushSetupCommandBuffer();
+  
   // Creates a cache poll of rendering pipilines.
   void createPipelineCache();
 
@@ -129,7 +133,7 @@ class VulkanBasic {
   //
   // \param width The width of the buffer.
   // \param height The height of the buffer.
-  void setupFrameBuffer(uint32_t width, uint32_t height, 
+  void setupFramebuffers(uint32_t width, uint32_t height, 
     const VkScBufferVec& swapchainBuffers);
 
   // Sets up the render pass.

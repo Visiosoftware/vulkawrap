@@ -93,8 +93,7 @@ class VulkanWidgetBase : public Widget, VulkanBasic {
   explicit VulkanWidgetBase(uint32_t width, uint32_t height) 
   :   Widget(width, height), swapChain(VK_NULL_HANDLE), 
       queueNodeId(std::numeric_limits<uint32_t>::max()) {
-    // The base VulkanBasic class provides the badic functionality for vulkan.
-    // We then connect the vulkan basic functionality to the widget. 
+    // 
     connectVulkan();
     
     // Setup the VulkanBasic base class 
