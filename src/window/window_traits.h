@@ -22,6 +22,9 @@
 
 #include <xcb/xcb.h>
 
+static constexpr uint32_t defaultWidth  = 1280;
+static constexpr uint32_t defaultHeight = 720;
+
 struct WindowTraits {
 #if defined(_WIN32)
 

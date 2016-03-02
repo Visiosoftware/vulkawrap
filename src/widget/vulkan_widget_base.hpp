@@ -46,6 +46,24 @@
   }                                                                           \
 }
 
+// Base widget class so that we can have a vector of widgets
+class Widget {
+ public:
+  // Constructor -- sets the width and the height
+  explicit Widget(uint32_t width, uint32_t height) 
+  : Width(width), Height(height) {}
+
+  // Virtual draw method that all widgets must have.
+  virtual void draw() = 0;
+
+  virtual ~Widget() {}
+
+ protected:
+  uint32_t Width;  // Width of the widget in pixels.
+  uint32_t Height; // Heigh of the widget in pixels.
+};
+  
+
 //---- Utility Struct -------------------------------------------------------//
 
 typedef struct SwapChainBufferWrapper {
@@ -60,7 +78,7 @@ typedef struct SwapChainBufferWrapper {
 // window platform for whatever OS this is running on.
 // \tparam WidgetTraits The traits for a widget.
 template <typename WsiType, typename WidgetTraits>
-class VulkanWidgetBase : VulkanBasic {
+class VulkanWidgetBase : public Widget, VulkanBasic {
  public:
   using VkImageVec  = std::vector<VkImage>;               // Image container.
   using VkBufferVec = std::vector<SwapChainBuffer>;       // Buffer container.
@@ -77,16 +95,18 @@ class VulkanWidgetBase : VulkanBasic {
   VkBufferVec     buffers;      // Buffers for the swapchain images.
   
   // Constructor -- initializes the Vulkan variables.
-  // TODO: Change UINT32_MAX
-  VulkanWidgetBase() 
-    : swapChain(VK_NULL_HANDLE), 
+  // 
+  // \param width The width of the widget in pixels.
+  // \param height The height of the widget in pixeks.
+  explicit VulkanWidgetBase(uint32_t width, uint32_t height) 
+  :   Widget(width, height), swapChain(VK_NULL_HANDLE), 
       queueNodeId(std::numeric_limits<uint32_t>::max()) {
     // The base VulkanBasic class provides the badic functionality for vulkan.
     // We then connect the vulkan basic functionality to the widget. 
     connectVulkan();
     
     // Setup the VulkanBasic base class 
-    this->setup(queueNodeId);
+    this->setup(this->Width, this->Height, queueNodeId, imageCount);
   }
 
   // Frees all the vulkan resources used by the swapchain.
@@ -113,6 +133,9 @@ class VulkanWidgetBase : VulkanBasic {
   // \param width The image width.
   // \param height The image height.
   void createSwapchain(uint32_t* width, uint32_t* height);
+
+  // Draws the widget to the screen.
+  void draw() {}
 
   // Initializes the widget -- specifically this initializes the vulkan
   // surface by calling the platform specific implemenatation and then 
@@ -478,7 +501,7 @@ void VulkanWidgetBase<WsiType, WidgetTraits>::createSwapchainBuffers(
   // using VulkanWidget = VulkanWidgetWindows;
 #elif defined(__linux__)
   #include "vulkan_widget_linux.h"
-  using DrawableWidget = VulkanWidgetLinux;
+  using VulkanWidget = VulkanWidgetLinux;
 #elif defined(__ANDROID__)
   // #include "vulkan_widget_android.h"
   // using VulkanWidget = VulkanWidgetAndroid;

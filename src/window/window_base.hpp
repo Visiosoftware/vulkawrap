@@ -22,11 +22,12 @@
 #include "window_traits.h"
 #include "../widget/vulkan_widget_base.hpp"
 
+#include <memory>
 #include <string>
+#include <vector>
 #include <glm/glm.hpp>
 
-static constexpr uint32_t defaultWidth  = 1280;
-static constexpr uint32_t defaultHeight = 720;
+// TODO: Change width and heght to a size
 
 struct Mouse {
   Mouse() 
@@ -35,6 +36,15 @@ struct Mouse {
   glm::vec2 position;
   bool      leftButton;
   bool      rightButton;
+};
+
+struct Size {
+  // Constructor for creating a Size object.
+  Size(uint32_t sizeX, uint32_t sizeY) 
+  : x(sizeX), y(sizeY) {}
+
+  uint32_t x;
+  uint32_t y;
 };
 
 // Defines a class which defines the interface for windows, and then by using
@@ -49,18 +59,20 @@ class WindowBase {
   // Alias for the type of window which is being used.
   using WindowType = typename WinTraits::WindowType;
 
-  // Default constructor to set the window size.
-  WindowBase() 
-  : Width(defaultWidth), Height(defaultHeight), Title("Vulkan Example"), 
-    Name("vulkanExample") {}
-
   // Constructor to set the size of the window.
-  WindowBase(uint32_t width, uint32_t height) 
+  explicit WindowBase(uint32_t width, uint32_t height) 
   : Width(width), Height(height), Title("Vulkan Example"), 
     Name("vulkanExample") {}
 
+  // Adds a widget to the widow.
+  //
+  // \param The widget to add to the window.
+  void addWidget(std::unique_ptr<Widget> widget) {
+    Widgets.push_back(std::move(widget));
+  }
+
   // Creates the window.
-  WindowType create() {
+  WindowType initialize() {
     return osSpecificWindow()->setupWindow();
   };
 
@@ -68,6 +80,9 @@ class WindowBase {
   void draw() {
     return osSpecificWindow()->render();
   };
+
+  // Gets the size of the window.
+  Size size() const { return Size(Width, Height); }
 
  protected:
   uint32_t    Width;  
@@ -92,10 +107,11 @@ class WindowBase {
   }
 
  private:
-  // Here a vulkan widget is added to the window which can render using vulkan
-  // -- this would usually be added to hold multiple widgets, but for these
-  // examples the only widget is going to be a vulkan one.
-  DrawableWidget VulkanWidget;
+  // Alias for a vector of widgets.
+  using WidgetVec  = std::vector<std::unique_ptr<Widget>>;
+  
+  // All the widgets for the widow.
+  WidgetVec Widgets;
 };
 
 // Aliases for a window based on the platform which is being used, since 

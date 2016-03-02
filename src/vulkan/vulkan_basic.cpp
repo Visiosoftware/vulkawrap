@@ -62,14 +62,17 @@ VulkanBasic::VulkanBasic()
          && "Fatal Error\n");
 }
 
-void VulkanBasic::setup(uint32_t queueNodeId) {
+void VulkanBasic::setup(uint32_t width, uint32_t height, uint32_t queueNodeId,
+    uint32_t numBuffers) {
   createCommandPool(queueNodeId);
   createSetupCommandBuffer();
   startBufferRecording(buffers::setupBuffer);
+  createCommandBuffers(numBuffers);
+  setupDepthStencil(width, height);
 }
 
 void VulkanBasic::startBufferRecording(const char* bufferType) {
-  VkResult result;
+  VkResult                 result;
   VkCommandBufferBeginInfo cmndBufferInfo = {};
   cmndBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -233,4 +236,86 @@ void VulkanBasic::createSetupCommandBuffer() {
   VkResult result = vkAllocateCommandBuffers(Device, &cmndBufferAllocInfo, 
                       &SetupCmndBuffer);
   assert(!result && "Failed to allocate command buffer : Fatal Error\n");
+}
+
+void VulkanBasic::setupDepthStencil(uint32_t width, uint32_t height) {
+  VkResult result;
+
+  VkImageCreateInfo imageInfo = {};
+  imageInfo.sType             = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+  imageInfo.pNext             = nullptr;
+  imageInfo.imageType         = VK_IMAGE_TYPE_2D;
+  imageInfo.format            = DepthFormat;
+  imageInfo.extent            = { width, height, 1 };
+  imageInfo.mipLevels         = 1;
+  imageInfo.arrayLayers       = 1;
+  imageInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
+  imageInfo.tiling            = VK_IMAGE_TILING_OPTIMAL;
+  imageInfo.usage             = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+                              | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+  imageInfo.flags             = 0;
+
+  VkMemoryAllocateInfo memAllocInfo = {};
+  memAllocInfo.sType                = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  memAllocInfo.pNext                = nullptr;
+  memAllocInfo.allocationSize       = 0;
+  memAllocInfo.memoryTypeIndex      = 0;
+
+  VkImageViewCreateInfo viewInfo           = {};
+  viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+  viewInfo.pNext                           = nullptr;
+  viewInfo.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
+  viewInfo.format                          = DepthFormat;
+  viewInfo.flags                           = 0;
+  viewInfo.subresourceRange                = {};
+  viewInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT 
+                                           | VK_IMAGE_ASPECT_STENCIL_BIT;
+  viewInfo.subresourceRange.baseMipLevel   = 0;
+  viewInfo.subresourceRange.levelCount     = 1;
+  viewInfo.subresourceRange.baseArrayLayer = 0;
+  viewInfo.subresourceRange.layerCount     = 1;
+
+  VkMemoryRequirements memRequirements;
+
+  result = vkCreateImage(Device, &imageInfo, nullptr, &DepthStencil.image);
+  assert(!result && "Failed to create image : Fatal Error\n");
+
+  vkGetImageMemoryRequirements(Device, DepthStencil.image, &memRequirements);
+  memAllocInfo.allocationSize = memRequirements.size;
+  getMemoryType(memRequirements.memoryTypeBits,
+    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memAllocInfo.memoryTypeIndex);
+  result = vkAllocateMemory(Device, &memAllocInfo, nullptr, 
+             &DepthStencil.memory);
+  assert(!result && "Failed to allocate memory for depth stencil : "
+         && "Fatal Error\n");
+  
+  result = vkBindImageMemory(Device, DepthStencil.image, DepthStencil.memory,
+             0);  
+  assert(!result && "Failed to bind image memory for depth stencil : "
+          && "Fatal Error\n");
+  vkutil::transformImageLayout(SetupCmndBuffer, DepthStencil.image,
+    VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+  viewInfo.image = DepthStencil.image;
+  result = vkCreateImageView(Device, &viewInfo, nullptr, &DepthStencil.view);
+  assert(!result && "Failed to create depth stencil image view : "
+         && "Fatal Error\n");
+}
+
+//---- Private --------------------------------------------------------------//
+
+VkBool32 VulkanBasic::getMemoryType(uint32_t typeBits, VkFlags properties,
+    uint32_t* typeIndex) {
+  for (uint32_t i = 0; i < 32; ++i) {
+    if ((typeBits & 1) == 1) {
+      if ((DeviceMemProps.memoryTypes[i].propertyFlags & properties) ==
+           properties) {
+        *typeIndex = i;
+        return true;
+      }
+    }
+    typeBits >>= 1;
+  }
+  return false;
 }

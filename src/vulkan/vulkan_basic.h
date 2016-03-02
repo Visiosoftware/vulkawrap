@@ -22,7 +22,7 @@
 // Defines the possible command buffers to atrt recording
 namespace buffers {
 
-char constexpr* setupBuffer = "Setup Buffer";
+const constexpr char* setupBuffer = "Setup Buffer";
 
 } // namespace buffers 
 
@@ -45,8 +45,12 @@ class VulkanBasic {
 
    // Sets up the basic vulkan functionality.
    //
+   // \param width       The width of the screen (in pixels).
+   // \param height      The hight of the screen (in pixels).
    // \param queueNodeId The index of the node of the queue to use.
-   void setup(uint32_t queueNodeId);
+   // \param numBuffers  The number of command buffers to create.
+   void setup(uint32_t width, uint32_t height, uint32_t queueNodeId, 
+     uint32_t numBuffers);
 
    // Makes a command buffer start recording.
    //
@@ -83,6 +87,13 @@ class VulkanBasic {
   VkCommandBuffer  SetupCmndBuffer; // Command buffer for setup.
   CmndBufferVec    DrawCmndBuffers; // Command buffers for rendering.
 
+  // Defines a struct for a depth stencil.
+  struct {
+    VkImage        image;
+    VkImageView    view;
+    VkDeviceMemory memory;
+  } DepthStencil;
+
   // Finds a queue which supports graphics operations
   //
   // Postconditions : A graphics queue is found
@@ -110,6 +121,21 @@ class VulkanBasic {
   // Creates the command buffer for setup commands.
   void createSetupCommandBuffer();
 
+  // Sets up the depth stencil.
+  //
+  // \param width The width of the image in the depth dtencil.
+  // \param height The hright of the image in the depth stencil.
+  void setupDepthStencil(uint32_t width, uint32_t height);
+
+ private:
+  // Gets a type of memory for vulkan -- returns truw if the requested memory
+  // type is found.
+  //
+  // \param typeBits The bits for the memory type information.
+  // \param properties The properties of the memory allocation.
+  // \param typeindex The index of the requested memory type.
+  VkBool32 getMemoryType(uint32_t typeBits, VkFlags properties, 
+    uint32_t* typeIndex);
 };
 
 #endif // VULKAN_VULKAN_VULKAN_BASIC_H

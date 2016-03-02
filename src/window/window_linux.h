@@ -30,11 +30,8 @@
 // which is specific to linux. The class uses the XCB window library.
 class LinuxWindow : public WindowBase<LinuxWindow, WindowTraits> {
  public:
-  // Default constructor -- creates the XCB connection
-  LinuxWindow();
-
   // Constructor which allows the size of the window to be set.
-  LinuxWindow(uint32_t width, uint32_t height);
+  LinuxWindow(uint32_t width = defaultWidth, uint32_t height = defaultWidth);
 
   // Destructor -- cleans up all window features.
   ~LinuxWindow();
@@ -71,11 +68,6 @@ class LinuxWindow : public WindowBase<LinuxWindow, WindowTraits> {
 
 
 //---- Public ---------------------------------------------------------------//
-
-LinuxWindow::LinuxWindow() 
-: Quit(false) {
-  initializeXcbConnection();
-}
 
 LinuxWindow::LinuxWindow(uint32_t width, uint32_t height) 
 : WindowBaseType(width, height), Quit(false) {

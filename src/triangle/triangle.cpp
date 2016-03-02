@@ -23,6 +23,13 @@ int main() {
 
   // Create a new window using the default size.
   Window window;
-  window.create();
+  window.initialize();
+
+  // Add a vulkan widget to the window.
+  window.addWidget(
+    std::make_unique<VulkanWidget>(window.size().x, window.size().y)
+  );
+
+  // Draw the window to the screen.
   window.draw();
 }

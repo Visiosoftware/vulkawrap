@@ -26,7 +26,11 @@ class VulkanWidgetLinux :
     public VulkanWidgetBase<VulkanWidgetLinux, WidgetTraits> {
  public:
   // Constructor -- initializes the widget.
-  VulkanWidgetLinux() {};
+  //
+  // \param width The width of the widget in pixels.
+  // \param height The height of the widget in pixels.
+  explicit VulkanWidgetLinux(uint32_t width, uint32_t height)
+  : BaseWidget(width, height) {};
 
   // Initializes the vulkan linux widget implemenetation.
   //
@@ -46,6 +50,7 @@ class VulkanWidgetLinux :
   }
 
  private:
+    using BaseWidget = VulkanWidgetBase<VulkanWidgetLinux, WidgetTraits>;
     using HandleType = typename WidgetTraits::HandleType;
     using WindowType = typename WidgetTraits::WindowType;
 };
