@@ -63,12 +63,15 @@ VulkanBasic::VulkanBasic()
 }
 
 void VulkanBasic::setup(uint32_t width, uint32_t height, uint32_t queueNodeId,
-    uint32_t numBuffers) {
+    const VkScBufferVec& swapchainBuffers) {
   createCommandPool(queueNodeId);
   createSetupCommandBuffer();
   startBufferRecording(buffers::setupBuffer);
-  createCommandBuffers(numBuffers);
+  createCommandBuffers(swapchainBuffers.size());
   setupDepthStencil(width, height);
+  setupRenderPass();
+  createPipelineCache();
+  // setupFrameBuffers(width, height, swapchainBuffers.size());
 }
 
 void VulkanBasic::startBufferRecording(const char* bufferType) {
@@ -301,6 +304,101 @@ void VulkanBasic::setupDepthStencil(uint32_t width, uint32_t height) {
   result = vkCreateImageView(Device, &viewInfo, nullptr, &DepthStencil.view);
   assert(!result && "Failed to create depth stencil image view : "
          && "Fatal Error\n");
+}
+
+void VulkanBasic::createPipelineCache() {
+  VkPipelineCacheCreateInfo pipelineCacheInfo = {};
+  pipelineCacheInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+  VkResult result = vkCreatePipelineCache(Device, &pipelineCacheInfo, nullptr,
+                      &PipelineCache);
+  assert(!result && "Failed to create pipeline cache : Fatal Error\n");
+}
+
+void VulkanBasic::setupFrameBuffer(uint32_t width, uint32_t height,
+    const VkScBufferVec& swapchainBuffers) {
+  VkImageView attachments[2];
+
+  // The depth and stencil attachments are the same for all frame buffers.
+  attachments[1] = DepthStencil.view;
+
+  VkFramebufferCreateInfo frameBufferInfo = {};
+  frameBufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+  frameBufferInfo.pNext            = nullptr;
+  frameBufferInfo.renderPass       = RenderPass;
+  frameBufferInfo.attachmentCount  = 2;
+  frameBufferInfo.pAttachments     = attachments;
+  frameBufferInfo.width            = width;
+  frameBufferInfo.height           = height;
+  frameBufferInfo.layers           = 1;
+
+  // Create a famebuffer for each of the swapchain images
+  FrameBuffers.resize(swapchainBuffers.size());
+  for (size_t i = 0; i < swapchainBuffers.size(); ++i) {
+    attachments[0]  = swapchainBuffers[0].view;
+    VkResult result = vkCreateFramebuffer(Device, &frameBufferInfo, nullptr,
+                        &FrameBuffers[i]);
+    assert(!result && "Failed to create swapbuffer : Fatal Error\n");
+  }
+}
+
+void VulkanBasic::setupRenderPass() {
+  VkResult                result;
+  VkAttachmentDescription attachments[2];
+
+  // Setup the color attachment.
+  attachments[0].format         = ColorFormat;
+  attachments[0].samples        = VK_SAMPLE_COUNT_1_BIT;
+  attachments[0].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  attachments[0].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+  attachments[0].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  attachments[0].initialLayout  = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+  attachments[0].finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+  // Setup the depth attachment.
+  attachments[1].format         = DepthFormat;
+  attachments[1].samples        = VK_SAMPLE_COUNT_1_BIT;
+  attachments[1].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  attachments[1].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+  attachments[1].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  attachments[1].initialLayout  = 
+    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+  attachments[1].finalLayout    = 
+    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+  VkAttachmentReference colorReference = {};
+  colorReference.attachment = 0;
+  colorReference.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+  VkAttachmentReference depthReference = {};
+  depthReference.attachment = 1;
+  depthReference.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+  VkSubpassDescription subpassInfo    = {};
+  subpassInfo.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+  subpassInfo.flags                   = 0;
+  subpassInfo.inputAttachmentCount    = 0;
+  subpassInfo.pInputAttachments       = nullptr;
+  subpassInfo.colorAttachmentCount    = 1;
+  subpassInfo.pColorAttachments       = &colorReference;
+  subpassInfo.pResolveAttachments     = nullptr;
+  subpassInfo.pDepthStencilAttachment = &depthReference;
+  subpassInfo.preserveAttachmentCount = 0;
+  subpassInfo.pPreserveAttachments    = nullptr;
+
+  VkRenderPassCreateInfo renderPassInfo = {};
+  renderPassInfo.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+  renderPassInfo.pNext           = nullptr;
+  renderPassInfo.attachmentCount = 2;
+  renderPassInfo.pAttachments    = attachments;
+  renderPassInfo.subpassCount    = 1;
+  renderPassInfo.pSubpasses      = &subpassInfo;
+  renderPassInfo.dependencyCount = 0;
+  renderPassInfo.pDependencies   = nullptr;
+
+  result = vkCreateRenderPass(Device, &renderPassInfo, nullptr, &RenderPass);
+  assert(!result && "Failed to create render pass : Fatal Error\n");
 }
 
 //---- Private --------------------------------------------------------------//

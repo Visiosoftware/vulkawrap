@@ -62,14 +62,8 @@ class Widget {
   uint32_t Width;  // Width of the widget in pixels.
   uint32_t Height; // Heigh of the widget in pixels.
 };
-  
 
 //---- Utility Struct -------------------------------------------------------//
-
-typedef struct SwapChainBufferWrapper {
-  VkImage     image;
-  VkImageView view;
-} SwapChainBuffer;
 
 // Defines a class which defines the general functionality required for
 // rendering to the window system with Vulkan. 
@@ -80,8 +74,6 @@ typedef struct SwapChainBufferWrapper {
 template <typename WsiType, typename WidgetTraits>
 class VulkanWidgetBase : public Widget, VulkanBasic {
  public:
-  using VkImageVec  = std::vector<VkImage>;               // Image container.
-  using VkBufferVec = std::vector<SwapChainBuffer>;       // Buffer container.
   using HandleType  = typename WidgetTraits::HandleType;  // Handle for window.
   using WindowType  = typename WidgetTraits::WindowType;  // Type of window
 
@@ -92,7 +84,7 @@ class VulkanWidgetBase : public Widget, VulkanBasic {
   uint32_t        imageCount;   // Number of images 
   uint32_t        queueNodeId;  // Index of node in the queue.
   VkImageVec      images;       // Images used in the swapchain.
-  VkBufferVec     buffers;      // Buffers for the swapchain images.
+  VkScBufferVec   buffers;      // Buffers for the swapchain images.
   
   // Constructor -- initializes the Vulkan variables.
   // 
@@ -106,7 +98,7 @@ class VulkanWidgetBase : public Widget, VulkanBasic {
     connectVulkan();
     
     // Setup the VulkanBasic base class 
-    this->setup(this->Width, this->Height, queueNodeId, imageCount);
+    this->setup(this->Width, this->Height, queueNodeId, buffers);
   }
 
   // Frees all the vulkan resources used by the swapchain.

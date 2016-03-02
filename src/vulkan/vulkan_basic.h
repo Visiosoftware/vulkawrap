@@ -16,6 +16,7 @@
 #ifndef VULKAN_VULKAN_VULKAN_BASIC_H
 #define VULKAN_VULKAN_VULKAN_BASIC_H
 
+#include "type_wrappers.h"
 #include <vulkan/vulkan.h>
 #include <vector>
 
@@ -29,9 +30,6 @@ const constexpr char* setupBuffer = "Setup Buffer";
 // Class which does some basic setup for vulkan.
 class VulkanBasic {
  public:
-   // Alias for a command buffer container.
-   using CmndBufferVec = std::vector<VkCommandBuffer>;
-
    // Constructor which:
    //  - Creates a VulkanInstance
    //  - Enumerates physical devices and uses the first one
@@ -48,9 +46,9 @@ class VulkanBasic {
    // \param width       The width of the screen (in pixels).
    // \param height      The hight of the screen (in pixels).
    // \param queueNodeId The index of the node of the queue to use.
-   // \param numBuffers  The number of command buffers to create.
+   // \param swapchainBuffers The swapchain buffers used for presenting.
    void setup(uint32_t width, uint32_t height, uint32_t queueNodeId, 
-     uint32_t numBuffers);
+     const VkScBufferVec& swapchainBuffers);
 
    // Makes a command buffer start recording.
    //
@@ -85,14 +83,11 @@ class VulkanBasic {
   VkCommandBuffer  DrawCmndBuffer;  // Command buffer for setup.
   VkCommandBuffer  PpCmndBuffer;    // For submitting a post present barrier.
   VkCommandBuffer  SetupCmndBuffer; // Command buffer for setup.
-  CmndBufferVec    DrawCmndBuffers; // Command buffers for rendering.
-
-  // Defines a struct for a depth stencil.
-  struct {
-    VkImage        image;
-    VkImageView    view;
-    VkDeviceMemory memory;
-  } DepthStencil;
+  VkCmndBufferVec  DrawCmndBuffers; // Command buffers for rendering.
+  VkFramebufferVec FrameBuffers;    // The framebuffers for rendering.
+  VkRenderPass     RenderPass;      // Render pass for frame buffer writes.
+  VkPipelineCache  PipelineCache;   // The rendering pipeline cache.
+  StencilBuffer    DepthStencil;    // Depth stencil for the framebuffer.
 
   // Finds a queue which supports graphics operations
   //
@@ -121,11 +116,24 @@ class VulkanBasic {
   // Creates the command buffer for setup commands.
   void createSetupCommandBuffer();
 
+  // Creates a cache poll of rendering pipilines.
+  void createPipelineCache();
+
   // Sets up the depth stencil.
   //
   // \param width The width of the image in the depth dtencil.
   // \param height The hright of the image in the depth stencil.
   void setupDepthStencil(uint32_t width, uint32_t height);
+
+  // Sets ip the frame buffer.
+  //
+  // \param width The width of the buffer.
+  // \param height The height of the buffer.
+  void setupFrameBuffer(uint32_t width, uint32_t height, 
+    const VkScBufferVec& swapchainBuffers);
+
+  // Sets up the render pass.
+  void setupRenderPass();
 
  private:
   // Gets a type of memory for vulkan -- returns truw if the requested memory
