@@ -11,18 +11,17 @@
 //
 // \file   vulkan_base.h
 // \brief  Defines a class with minimal basic functionality -- this is designed
-// as a base class which should be used by derived class wanting more specific
-// functionality.
+// to easily specify the types of devices and queues which each of the device
+// types must have.
 //---------------------------------------------------------------------------//
 
-#ifndef VULKAN_VULKAN_VULKAN_BASE_H
-#define VULKAN_VULKAN_VULKAN_BASE_H
+#ifndef VULKAN_VW_BASE_H
+#define VULKAN_VW_BASE_H
 
 #include "vulkan_wrapper.h"
 
-// Class which has a vulkan instance and a all the physical devices supported.
-// It can be used by other classes to extended the vulkan functionality more
-// specifically.
+// Base wrapper class for vullkan which lets the device type and the queues
+// which each device must suppot be specified.
 class VulkanBase {
  public:
    // Constructor which:
@@ -32,7 +31,8 @@ class VulkanBase {
    // \param appName The name of the vulkan application for this instance.
    // \param engineName The name of the engine for this application.
    // \param extensions The vulkan extensions to use.
-   VulkanBase(const char* appName = "", const char* engineName = "",
+   VulkanBase(const VwDeviceSpecifier& deviceSpecifier, 
+     const char* appName = "", const char* engineName = "",
      const std::vector<const char*>&extensions = std::vector<const char*>{});
 
   // Finds a queue for a specific physical device. If the queue is found, then

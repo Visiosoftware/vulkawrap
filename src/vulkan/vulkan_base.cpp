@@ -20,12 +20,13 @@
 
 //---- Public ---------------------------------------------------------------//
 
-VulkanBase::VulkanBase(const char* appName, const char* engineName , 
+VulkanBase::VulkanBase(const VwDeviceSpecifier& deviceSpecifier, 
+    const char* appName, const char* engineName, 
     const std::vector<const char*>& extensions)
-:   PhysicalDevices(0), PhysicalDevicesMemProps(0) { 
-   createInstance(appName, engineName, extensions);
-   getPhysicalDevices();
-   getPhysicalDevicesMemoryProperties();
+    : PhysicalDevices(0), PhysicalDevicesMemProps(0) { 
+  createInstance(appName, engineName, extensions);
+  getPhysicalDevices();
+  getPhysicalDevicesMemoryProperties();
 }
 
 bool VulkanBase::findQueue(uint32_t deviceIdx, VkQueueFlagBits queueFlags,
