@@ -70,8 +70,19 @@ using VwQueueTypeVec = std::vector<VwQueueType>;
 struct VwDeviceSpecifier {
   // Default constructor -- specify the device type and the queues it needs to
   // support.
-  explicit VwDeviceSpecifier(VwDeviceType device, VwQueueTypeVec queues)
-  : deviceType(device), queueTypes(queues) {}
+  //
+  // \note While only the first type is checked for equivalence with
+  // VwQueueType, if any of the parameter pack is not VwQueueType then
+  // construction of the vector will fail, which is what we want.
+  //
+  // \param QType   The type of the first queue which must be supported for
+  // the device
+  // \param QTypes  The types of the rest of the queues which must be
+  // supported
+  template <typename QType, typename... QTypes, typename = 
+            std::enable_if_t<std::is_same<VwQueueType, QType>::value>>
+  explicit VwDeviceSpecifier(VwDeviceType device, QType qType, QTypes... qTypes)
+  : deviceType(device), queueTypes{qType, qTypes...} {}
 
   VwDeviceType    deviceType; // The type of device to look for.
   VwQueueTypeVec  queueTypes; // The types of queues the device must support.
