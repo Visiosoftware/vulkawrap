@@ -20,11 +20,37 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 
+//---- Enums ----------------------------------------------------------------//
+
+// Enums for the types of physical devices which are supported -- these are the
+// same values as they are in vulkan, but with the addition of the any type, to
+// allow for indifference.
+enum class VwDeviceType : uint8_t {
+  VW_OTHER          = 0,
+  VW_INTEGRATED_GPU = 1,
+  VW_DISCRETE_GPU   = 2,
+  VW_VIRTUAL_GPU    = 3,
+  VW_CPU            = 4,
+  VW_ANY            = 5
+};
+
+// Enum for the types of queues which are supported -- these are the same
+// values as for pure vulkan, but with the addition of the any type, so that
+// any queue can be specified.
+enum class VwQueueType : uint8_t {
+  VW_GRAPHICS_QUEUE       = 0x01,
+  VW_COMPUTE_QUEUE        = 0x02,
+  VW_TRANSFER_QUEUE       = 0x04,
+  VW_SPARSE_BINDING_QUEUE = 0x08,
+  VW_ANY                  = 0x10
+};
+
 //---- Aliases --------------------------------------------------------------//
 
 using VwPhysDeviceVec    = std::vector<VkPhysicalDevice>;
 using VwPhysDeviceMemVec = std::vector<VkPhysicalDeviceMemoryProperties>;
 using VwQueueFamPropVec  = std::vector<VkQueueFamilyProperties>;
+using VwQueueTypeVec     = std::vector<VwQueueType>;
 
 //---- Structs --------------------------------------------------------------//
 
@@ -47,25 +73,6 @@ struct VwPhysicalDevice {
   VkPhysicalDeviceMemoryProperties memoryProperties;
 };
 
-enum class VwDeviceType : uint8_t {
-  VW_OTHER          = 0,
-  VW_INTEGRATED_GPU = 1,
-  VW_DISCRETE_GPU   = 2,
-  VW_VIRTUAL_GPU    = 3,
-  VW_CPU            = 4,
-  VW_ANY            = 5
-};
-
-enum class VwQueueType : uint8_t {
-  VW_GRAPHICS_QUEUE       = 0x01,
-  VW_COMPUTE_QUEUE        = 0x02,
-  VW_TRANSFER_QUEUE       = 0x04,
-  VW_SPARSE_BINDING_QUEUE = 0x08,
-  VW_ANY                  = 0x10
-};
-
-using VwQueueTypeVec = std::vector<VwQueueType>;
- 
 // Struct to allow the device type and the queues it must support be specified.
 struct VwDeviceSpecifier {
   // Default constructor -- specify the device type and the queues it needs to
@@ -87,6 +94,10 @@ struct VwDeviceSpecifier {
   VwDeviceType    deviceType; // The type of device to look for.
   VwQueueTypeVec  queueTypes; // The types of queues the device must support.
 };
+
+//---- Aliases2 -------------------------------------------------------------//
+
+using VwDeviceSpecVec = std::vector<VwDeviceSpecifier>;
 
 //---- Functions ------------------------------------------------------------//
 

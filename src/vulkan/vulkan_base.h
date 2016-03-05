@@ -28,10 +28,12 @@ class VulkanBase {
    //   - Creates a Vulkan Instance
    //   - Enumerates Physical Devices
    //
-   // \param appName The name of the vulkan application for this instance.
-   // \param engineName The name of the engine for this application.
-   // \param extensions The vulkan extensions to use.
-   VulkanBase(const VwDeviceSpecifier& deviceSpecifier, 
+   // \param deviceSpecifiers The specifiers for the properties of each device.
+   // \param appName          The name of the vulkan application for this 
+   //        instance.
+   // \param engineName       The name of the engine for this application.
+   // \param extensions       The vulkan extensions to use.
+   VulkanBase(const VwDeviceSpecVec& deviceSpecifiers, 
      const char* appName = "", const char* engineName = "",
      const std::vector<const char*>&extensions = std::vector<const char*>{});
 
@@ -41,9 +43,9 @@ class VulkanBase {
   // \note This function only sets the value of queueIdx if all of the flags
   // which are set are found.
   //
-  // \param deviceIdx The index of the device to find the queue for.
-  // \param queueFlags The queue to search for.
-  // \param queueIdx The index of the queue
+  // \param deviceIdx   The index of the device to find the queue for.
+  // \param queueFlags  The queue to search for.
+  // \param queueIdx    The index of the queue
   bool findQueue(uint32_t deviceIdx, VkQueueFlagBits queueFlags, 
     uint32_t* queueIdx);
   
@@ -80,14 +82,16 @@ class VulkanBase {
   private:
    // Creates the vulkan instance.
    //
-   // \param appName The name of the vulkan application.
+   // \param appName    The name of the vulkan application.
    // \param engineName The name of the engine application.
    // \param extensions The extensions to enable for the instance.
    VkResult createInstance(const char* appName, const char* engineName,
      const std::vector<const char*>& extensions);
 
-  // Gets all the physical devices which are available.
-  void getPhysicalDevices();
+  // Gets all the physical devices which meet the requirements specified.
+  //
+  // \param deviceSpecifiers A vector of device specifiers.
+  void getPhysicalDevices(const VwDeviceSpecVec& deviceSpecifiers);
 
   // Gets the memory properties of each of the physical devices.
   void getPhysicalDevicesMemoryProperties();

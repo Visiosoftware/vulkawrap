@@ -18,14 +18,34 @@
 #include "vulkan_base.h"
 #include <cassert>
 
+#include <algorithm>
+#include <vector>
+
+// Just putting this here for now -- will move it later
+
+// Wrapper around erase and remove_if to remove elements from a vector over the
+// entire vector.
+template <typename VecType, typename Predicate>
+void vecRemoveIf(VecType& vec, Predicate predicate) {
+  vec.erase(std::remove_if(vec.begin(), vec.end(), predicate), vec.end());
+};
+
+// Wrapper around erase and remove_if to remove elements when the start and end
+// iterator for the vector are given.
+template <typename VecType, typename ForwardIt, typename Predicate>
+void vecRemoveIf(VecType& vec, ForwardIt first, ForwardIt last, 
+       Predicate predicate) {
+  vec.erase(std::remove_if(first, last, predicate), last);
+};
+
 //---- Public ---------------------------------------------------------------//
 
-VulkanBase::VulkanBase(const VwDeviceSpecifier& deviceSpecifier, 
+VulkanBase::VulkanBase(const VwDeviceSpecVec& deviceSpecifiers, 
     const char* appName, const char* engineName, 
     const std::vector<const char*>& extensions)
     : PhysicalDevices(0), PhysicalDevicesMemProps(0) { 
   createInstance(appName, engineName, extensions);
-  getPhysicalDevices();
+  getPhysicalDevices(std::forward<const VwDeviceSpecVec&&>(deviceSpecifiers);
   getPhysicalDevicesMemoryProperties();
 }
 
@@ -92,11 +112,11 @@ VkResult VulkanBase::createInstance(const char* appName,
   return vkCreateInstance(&instanceInfo, nullptr, &Instance); 
 }
  
-void VulkanBase::getPhysicalDevices() {
+void VulkanBase::getPhysicalDevices(const VwDeviceSpecVec& deviceSpecifiers) {
   assert(Instance != nullptr && "VkInstance not initializes so physical "
          && "devices cannot be found\n");
 
-  uint32_t deviceCount =0;
+  uint32_t deviceCount = 0;
   VkResult result      = vkEnumeratePhysicalDevices(Instance, &deviceCount,
                            nullptr);
   assert(!result && "Failed to enumerate physical devices : Fatal Error\n");
@@ -107,6 +127,15 @@ void VulkanBase::getPhysicalDevices() {
   result = vkEnumeratePhysicalDevices(Instance, &deviceCount, 
              PhysicalDevices.data());
   assert(!result && "Could not enumerate physical devices : Fatal Error\n");
+
+  // Go through the devices and check that they are the right type.
+  vecRemoveIf(PhysicalDevices, [&] (const auto & physicalDevice) {
+      bool isRequestedDeviceType = false;
+      for (const auto& specifier : deviceSpecifiers) {
+      }
+    return physicalDevice.deviceType == 
+  }
+  
 }
 
 void VulkanBase::getPhysicalDevicesMemoryProperties() {
