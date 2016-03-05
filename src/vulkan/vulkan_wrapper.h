@@ -18,6 +18,7 @@
 #define VULKAN_VULKAN_VULKAN_WRAPPER_H
 
 #include <vulkan/vulkan.h>
+#include <algorithm>
 #include <vector>
 
 //---- Enums ----------------------------------------------------------------//
@@ -47,30 +48,67 @@ enum class VwQueueType : uint8_t {
 
 //---- Aliases --------------------------------------------------------------//
 
-using VwPhysDeviceVec    = std::vector<VkPhysicalDevice>;
-using VwPhysDeviceMemVec = std::vector<VkPhysicalDeviceMemoryProperties>;
 using VwQueueFamPropVec  = std::vector<VkQueueFamilyProperties>;
 using VwQueueTypeVec     = std::vector<VwQueueType>;
+using VwQueueIdVec       = std::vector<uint32_t>;
 
 //---- Structs --------------------------------------------------------------//
 
-// Wrapper around a vulkan physical device
+// Wrapper for Vulkan Physical Devices to include the queus which are
+// assosciated with the physical device, so that these types of devices can be
+// used to let the user speciffy a device type and the queues which it must
+// support.
 struct VwPhysicalDevice {
+  VkPhysicalDevice    device;
+  VwQueueTypeVec      queueTypes;
+  VwQueueIdVec        queueIds;
+
   // Default constructor 
-  VwPhysicalDevice() {};
+  VwPhysicalDevice() 
+  : queueTypes(0), queueIds(0) {};
 
-  // Constructor so that we can return a VwPhysicalDevice given a vulkan
-  // physical device and its memory properties.
+  // Constructor which takes a vulkan physical device.
   //
-  // \param physicalDevice The physical device to wrap.
-  // \param memoryProperties The memory properties of the physical device to
-  // wrap
-  VwPhysicalDevice(const VkPhysicalDevice& physicalDevice, 
-                   const VkPhysicalDeviceMemoryProperties& memProperties)
-  :  device(physicalDevice), memoryProperties(memProperties) {}
+  // \param vkPhysicalDevice The vulkan physical device.
+  VwPhysicalDevice(const VkPhysicalDevice& vkPhysicalDevice) 
+  : device(vkPhysicalDevice), queueTypes(0), queueIds(0) {}
 
-  VkPhysicalDevice                 device;
-  VkPhysicalDeviceMemoryProperties memoryProperties;
+  // Constructor which takes the device, the queue types and indexes of those
+  // queues.
+  //
+  // \param vkPhysicalDevice The vulkan physical device.
+  // \param qTypes           The types of queus which are supported.
+  // \param qIds             The indexes of each queue type.
+  VwPhysicalDevice(const VkPhysicalDevice vkPhysicalDevice, 
+    const VwQueueTypeVec& qTypes, const VwQueueIdVec qIds) 
+  : device(vkPhysicalDevice), queueTypes(qTypes), queueIds(qIds) {}
+
+  // Checks for the requested queues, and adds those which are a match.
+  //
+  // \param requestedQueueType The type of queues the user requests the device
+  // should have.
+  void addSupportedQueues(const VwQueueTypeVec& requestedQueueTypes) {
+    uint32_t queueCount, queueId = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueCount, nullptr);
+
+    if (queueCount < 1) return;
+
+    VwQueueFamPropVec queueProperties;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueCount, 
+      queueProperties.data());
+    
+    for (; queueId < queueCount; ++queueId) {
+      for (const auto& queueType : requestedQueueTypes) {
+        if (!(static_cast<uint8_t>(queueProperties[queueId].queueFlags) & 
+              static_cast<uint8_t>(queueType))) {
+          continue;
+        }
+
+        queueIds.push_back(queueId);
+        queueTypes.push_back(queueType);
+      }
+    }
+  }
 };
 
 // Struct to allow the device type and the queues it must support be specified.
@@ -88,7 +126,7 @@ struct VwDeviceSpecifier {
   // supported
   template <typename QType, typename... QTypes, typename = 
             std::enable_if_t<std::is_same<VwQueueType, QType>::value>>
-  explicit VwDeviceSpecifier(VwDeviceType device, QType qType, QTypes... qTypes)
+  VwDeviceSpecifier(VwDeviceType device, QType qType, QTypes... qTypes)
   : deviceType(device), queueTypes{qType, qTypes...} {}
 
   VwDeviceType    deviceType; // The type of device to look for.
@@ -98,9 +136,28 @@ struct VwDeviceSpecifier {
 //---- Aliases2 -------------------------------------------------------------//
 
 using VwDeviceSpecVec = std::vector<VwDeviceSpecifier>;
+using VwPhysDeviceVec = std::vector<VwPhysicalDevice>;
 
 //---- Functions ------------------------------------------------------------//
 
+namespace algo {
+
+// Wrapper around erase and remove_if to remove elements from a vector over the
+// entire vector.
+template <typename VecType, typename Predicate>
+inline void vecRemoveIf(VecType& vec, Predicate predicate) {
+  vec.erase(std::remove_if(vec.begin(), vec.end(), predicate), vec.end());
+}
+
+// Wrapper around erase and remove_if to remove elements when the start and end
+// iterator for the vector are given.
+template <typename VecType, typename ForwardIt, typename Predicate>
+inline void vecRemoveIf(VecType& vec, ForwardIt first, ForwardIt last, 
+       Predicate predicate) {
+  vec.erase(std::remove_if(first, last, predicate), last);
+}
+
+}  // namespace algo
 
 #endif  // VULKAN_VULKAN_VULKAN_WRAPPER_H
 

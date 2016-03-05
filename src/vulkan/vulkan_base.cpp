@@ -18,63 +18,50 @@
 #include "vulkan_base.h"
 #include <cassert>
 
-#include <algorithm>
-#include <vector>
+namespace {
 
-// Just putting this here for now -- will move it later
+// Checks if a vkPhysicalDevice fits one of the specifications. If a match is
+// found then the index of the match is returned, otherwise a one past the end
+// index is returned (the number of specifiers)
+//
+// \param vkPhysicalDevice    The vulkan physical device to check.
+// \param vwDeviceSpecifiers  The specifiers to find a match with.
+size_t findDeviceTypeIndex(const VkPhysicalDevice& vkPhysicalDevice, 
+                           const VwDeviceSpecVec& vwDeviceSpecifiers) {
+  VkResult                   result;
+  size_t                     specifierIndex           = 0;
+  VkPhysicalDeviceProperties physicalDeviceProperties = {};
 
-// Wrapper around erase and remove_if to remove elements from a vector over the
-// entire vector.
-template <typename VecType, typename Predicate>
-void vecRemoveIf(VecType& vec, Predicate predicate) {
-  vec.erase(std::remove_if(vec.begin(), vec.end(), predicate), vec.end());
-};
+  vkGetPhysicalDeviceProperties(vkPhysicalDevice, &physicalDeviceProperties);
+  assert(!result && "Failed to get properties of physical device : "
+         && "Fatal Error\n");
 
-// Wrapper around erase and remove_if to remove elements when the start and end
-// iterator for the vector are given.
-template <typename VecType, typename ForwardIt, typename Predicate>
-void vecRemoveIf(VecType& vec, ForwardIt first, ForwardIt last, 
-       Predicate predicate) {
-  vec.erase(std::remove_if(first, last, predicate), last);
-};
+  for (const auto& deviceSpecifier : vwDeviceSpecifiers) {
+    if (static_cast<uint8_t>(physicalDeviceProperties.deviceType) ==
+        static_cast<uint8_t>(deviceSpecifier.deviceType)) {
+      break;
+    }
+    ++specifierIndex;
+  }
+  // We return the inverse because we want to return true for all devices
+  // which are 
+  return specifierIndex;
+}
 
+}  // annonymous namespace
+ 
 //---- Public ---------------------------------------------------------------//
 
 VulkanBase::VulkanBase(const VwDeviceSpecVec& deviceSpecifiers, 
-    const char* appName, const char* engineName, 
-    const std::vector<const char*>& extensions)
-    : PhysicalDevices(0), PhysicalDevicesMemProps(0) { 
+    bool devicesMustSupportAllQueues, const char* appName, 
+    const char* engineName, const std::vector<const char*>& extensions)
+:   PhysicalDevices(0) { 
   createInstance(appName, engineName, extensions);
-  getPhysicalDevices(std::forward<const VwDeviceSpecVec&&>(deviceSpecifiers);
-  getPhysicalDevicesMemoryProperties();
-}
 
-bool VulkanBase::findQueue(uint32_t deviceIdx, VkQueueFlagBits queueFlags,
-    uint32_t* queueIdx) {
-  uint32_t queueCount, queueId = 0;
-  vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevices[deviceIdx], 
-    &queueCount, nullptr);
-
-  if (queueCount < 1)       // No queues for physical device.
-    return false;
-
-  VwQueueFamPropVec queueProperties;
-  queueProperties.resize(queueCount);
-  vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevices[deviceIdx], 
-    &queueCount, queueProperties.data());
-
-  // Check if the requested queue can be found.
-  for (; queueId < queueCount; ++queueId) {
-    if (queueProperties[queueId].queueFlags & queueFlags)
-      break;
-  }
- 
-  if (queueId < queueCount) { 
-    *queueIdx = queueId;    
-    return true;
-  }  else { 
-    return false;
-  }
+  // Filter out all the devices which do not match the physical 
+  // device types and the queue types for those devices .
+  getPhysicalDevices(std::forward<const VwDeviceSpecVec&&>(deviceSpecifiers), 
+                     devicesMustSupportAllQueues);
 }
 
 //---- Private --------------------------------------------------------------//
@@ -100,9 +87,9 @@ VkResult VulkanBase::createInstance(const char* appName,
 
   // Create and set the properties of a vulkan instance
   VkInstanceCreateInfo instanceInfo = {};
-  instanceInfo.sType            = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-  instanceInfo.pNext            = nullptr;
-  instanceInfo.pApplicationInfo = &appInfo;
+  instanceInfo.sType                = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+  instanceInfo.pNext                = nullptr;
+  instanceInfo.pApplicationInfo     = &appInfo;
 
   if (enabledExtensions.size() > 0) {
     instanceInfo.enabledExtensionCount   = 
@@ -112,7 +99,8 @@ VkResult VulkanBase::createInstance(const char* appName,
   return vkCreateInstance(&instanceInfo, nullptr, &Instance); 
 }
  
-void VulkanBase::getPhysicalDevices(const VwDeviceSpecVec& deviceSpecifiers) {
+void VulkanBase::getPhysicalDevices(const VwDeviceSpecVec& deviceSpecifiers, 
+    bool devicesMustSupportAllQueues) {
   assert(Instance != nullptr && "VkInstance not initializes so physical "
          && "devices cannot be found\n");
 
@@ -123,25 +111,36 @@ void VulkanBase::getPhysicalDevices(const VwDeviceSpecVec& deviceSpecifiers) {
   assert(deviceCount >= 1 && "Failed to find any physical devices : "
          && "Fatal Error\n");
 
-  PhysicalDevices.resize(deviceCount); 
+  std::vector<VkPhysicalDevice> physicalDevices;
+  physicalDevices.resize(deviceCount); 
   result = vkEnumeratePhysicalDevices(Instance, &deviceCount, 
-             PhysicalDevices.data());
+             physicalDevices.data());
   assert(!result && "Could not enumerate physical devices : Fatal Error\n");
 
-  // Go through the devices and check that they are the right type.
-  vecRemoveIf(PhysicalDevices, [&] (const auto & physicalDevice) {
-      bool isRequestedDeviceType = false;
-      for (const auto& specifier : deviceSpecifiers) {
-      }
-    return physicalDevice.deviceType == 
-  }
-  
-}
+  // Go through all the physical devices and check if they are
+  // one of the requested types and have the correct queues.
+  size_t deviceTypeId = 0;
+  for (const auto& vkPhysicalDevice : physicalDevices) {
+    deviceTypeId = findDeviceTypeIndex(vkPhysicalDevice, deviceSpecifiers);
+    if (deviceTypeId == deviceSpecifiers.size())
+      continue;   // Not a supported device -- next iteration.
+    
+    // The device has a correct type, so create a VwPhysicalDevice 
+    // and add the requested queues which the device supports.
+    PhysicalDevices.emplace_back(vkPhysicalDevice);
+    PhysicalDevices.back().addSupportedQueues(
+      deviceSpecifiers[deviceTypeId].queueTypes
+    );
 
-void VulkanBase::getPhysicalDevicesMemoryProperties() {
-  PhysicalDevicesMemProps.resize(PhysicalDevices.size());
-  for (size_t i = 0; i < PhysicalDevices.size(); ++i) {
-    vkGetPhysicalDeviceMemoryProperties(PhysicalDevices[i], 
-      &PhysicalDevicesMemProps[i]); 
+    // Remove the device if it must support all queues
+    // and not all the requested queus were found.
+    if (devicesMustSupportAllQueues && 
+        (PhysicalDevices.back().queueTypes.size() != 
+         deviceSpecifiers[deviceTypeId].queueTypes.size())) {
+      PhysicalDevices.pop_back();
+    }
   }
+
+  assert(PhysicalDevices.size() >= 1 && "Failed to find a physical device "
+         && "which meets the reequested specifiers : Fatal Error\n");
 }

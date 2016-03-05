@@ -22,8 +22,8 @@
 
 int main() {
 
-  VulkanBase vkBase(VwDeviceSpecifier(VwDeviceType::VW_ANY, 
-               VwQueueType::VW_ANY));
+  VulkanBase vkBase(VwDeviceSpecVec{ {VwDeviceType::VW_ANY, 
+                                      VwQueueType::VW_ANY } } );
 
   // Create a new window using the default size.
   Window window;

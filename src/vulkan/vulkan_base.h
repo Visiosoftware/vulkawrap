@@ -24,60 +24,42 @@
 // which each device must suppot be specified.
 class VulkanBase {
  public:
-   // Constructor which:
-   //   - Creates a Vulkan Instance
-   //   - Enumerates Physical Devices
-   //
-   // \param deviceSpecifiers The specifiers for the properties of each device.
-   // \param appName          The name of the vulkan application for this 
-   //        instance.
-   // \param engineName       The name of the engine for this application.
-   // \param extensions       The vulkan extensions to use.
-   VulkanBase(const VwDeviceSpecVec& deviceSpecifiers, 
-     const char* appName = "", const char* engineName = "",
-     const std::vector<const char*>&extensions = std::vector<const char*>{});
+  // Constructor which:
+  //   - Creates a Vulkan Instance
+  //   - Enumerates Physical Devices
+  //
+  // \param deviceSpecifiers            The specifiers for the properties of 
+  // each device.
+  // \param devicesMustSupportAllQueues Devices are only added if the device
+  // supports all the requested queues, and not only some of them.
+  // \param appName                     The name of the vulkan application for 
+  // this instance.
+  // \param engineName                  The name of the engine for this 
+  // application.   
+  // \param extensions                  The vulkan extensions to use.
+  VulkanBase(const VwDeviceSpecVec& deviceSpecifiers,
+    bool devicesMustSupportAllQueues          = true                      , 
+    const char* appName                       = ""                        , 
+    const char* engineName                    = ""                        ,
+    const std::vector<const char*>&extensions = std::vector<const char*>{});
 
-  // Finds a queue for a specific physical device. If the queue is found, then
-  // the function returns truw, otherwise it returns false.
-  //
-  // \note This function only sets the value of queueIdx if all of the flags
-  // which are set are found.
-  //
-  // \param deviceIdx   The index of the device to find the queue for.
-  // \param queueFlags  The queue to search for.
-  // \param queueIdx    The index of the queue
-  bool findQueue(uint32_t deviceIdx, VkQueueFlagBits queueFlags, 
-    uint32_t* queueIdx);
-  
-  // Gets a physical device from the available physical devices.
+  // Gets a vulkan physical device from the available physical devices.
   //
   // \param deviceIdx The index of the device to set.
   VkPhysicalDevice getVkPhysicalDevice(size_t deviceIdx) const {
-    return PhysicalDevices[deviceIdx];
+    return PhysicalDevices[deviceIdx].device;
   }
 
-  // Gets the memory properties of a physical device.
+  // Gets a vulkan wrapper physical device.
   //
-  // \param deviceIdx The index of the phsical device to get the memory
-  // properties of.
-  VkPhysicalDeviceMemoryProperties getVkPhysicalDeviceMemoryProperties(
-      size_t deviceIdx) const {
-    return PhysicalDevicesMemProps[deviceIdx];
-  }
-
-  // Gets a wrapper around a physical device and its memory properties for when
-  // both are required.
-  //
-  // \param deviceIdx The index of the physical device and its memory to get.
+  // \param deviceIdx The index of the wrapper physical device to get.
   VwPhysicalDevice getVwPhysicalDevice(size_t deviceIdx) const {
-    return VwPhysicalDevice(PhysicalDevices[deviceIdx], 
-             PhysicalDevicesMemProps[deviceIdx]);
+    return PhysicalDevices[deviceIdx];
   }
 
   protected:
    VkInstance         Instance;                 // Store per-application state.
    VwPhysDeviceVec    PhysicalDevices;          // CPUs | GPUs for vulkan.
-   VwPhysDeviceMemVec PhysicalDevicesMemProps;  // Devices memory properties.
 
   private:
    // Creates the vulkan instance.
@@ -90,11 +72,11 @@ class VulkanBase {
 
   // Gets all the physical devices which meet the requirements specified.
   //
-  // \param deviceSpecifiers A vector of device specifiers.
-  void getPhysicalDevices(const VwDeviceSpecVec& deviceSpecifiers);
-
-  // Gets the memory properties of each of the physical devices.
-  void getPhysicalDevicesMemoryProperties();
+  // \param deviceSpecifiers            A vector of device specifiers.
+  // \param devicesMustSupportAllQueus  If the device must only be added if all
+  // of the queues in the VwDeviceSpecifer are found.
+  void getPhysicalDevices(const VwDeviceSpecVec& deviceSpecifiers,
+                          bool devicesMustSupportAllQueues);
 };
 
 #endif  // VULKAN_VULKAN_VULKAN_BASE_H
