@@ -38,9 +38,12 @@ size_t findDeviceTypeIndex(const VkPhysicalDevice& vkPhysicalDevice,
 
   for (const auto& deviceSpecifier : vwDeviceSpecifiers) {
     if (static_cast<uint8_t>(physicalDeviceProperties.deviceType) ==
-        static_cast<uint8_t>(deviceSpecifier.deviceType)) {
+        static_cast<uint8_t>(deviceSpecifier.deviceType)          ) {
       break;
     }
+    if (deviceSpecifier.deviceType == VwDeviceType::VW_ANY)
+      break;
+
     ++specifierIndex;
   }
   // We return the inverse because we want to return true for all devices

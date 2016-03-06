@@ -94,13 +94,15 @@ struct VwPhysicalDevice {
     if (queueCount < 1) return;
 
     VwQueueFamPropVec queueProperties;
+    queueProperties.resize(queueCount);
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueCount, 
       queueProperties.data());
     
     for (; queueId < queueCount; ++queueId) {
       for (const auto& queueType : requestedQueueTypes) {
-        if (!(static_cast<uint8_t>(queueProperties[queueId].queueFlags) & 
-              static_cast<uint8_t>(queueType))) {
+        if ((!(static_cast<uint8_t>(queueProperties[queueId].queueFlags)  & 
+               static_cast<uint8_t>(queueType))                         ) &&
+            (queueType != VwQueueType::VW_ANY                           )) {
           continue;
         }
 
