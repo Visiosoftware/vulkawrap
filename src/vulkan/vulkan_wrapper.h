@@ -19,6 +19,7 @@
 
 #include <vulkan/vulkan.h>
 #include <algorithm>
+#include <iostream>
 #include <vector>
 
 //---- Enums ----------------------------------------------------------------//
@@ -135,6 +136,25 @@ struct VwDeviceSpecifier {
   VwQueueTypeVec  queueTypes; // The types of queues the device must support.
 };
 
+// Struct which can handles all errors.
+struct ErrorHandler {
+};
+
+// Struct which removes all error handling code.
+struct ErrorRemover {
+};
+
+// Struct which can handle asserts.
+struct AssertHandler {
+};
+
+// Struct which can remove asserts.
+struct AssertRemover {
+};
+
+using ErrorHandling  = ErrorHandler;
+using AssertHandling = AssertHandler;
+
 //---- Aliases2 -------------------------------------------------------------//
 
 using VwDeviceSpecVec = std::vector<VwDeviceSpecifier>;
@@ -161,6 +181,140 @@ inline void vecRemoveIf(VecType& vec, ForwardIt first, ForwardIt last,
 
 }  // namespace algo
 
+namespace detail {
+
+// Metafunction to check if a type supports error handling.
+//
+// \tparam Type The type to check for error handling.
+template <typename Type> 
+struct supports_error_handling {
+  static constexpr bool value = std::is_same<ErrorHandler, Type>::value ||
+                                std::is_base_of<ErrorHandler, Type>::value;
+};
+
+// Metafunction to check if a type supports assert handling.
+//
+// \tparam Type The type for check for assert handling.
+template <typename Type>
+struct supports_assert_handling {
+  static constexpr bool value = std::is_same<AssertHandler, Type>::value ||
+                                std::is_base_of<AssertHandler, Type>::value;
+};
+
+}  // namespace detail
+
+namespace util {
+
+// Prints the the meaning of a VkResult code.
+//
+// \param result The code for result to print.
+void printVulkanResult(VkResult result) {
+#define GET_VULKAN_RES_CODE(code, msg)                                        \
+  case (code) : std::cerr << (msg); break
+
+  switch (result) {
+    GET_VULKAN_RES_CODE(  0 , "VK_SUCCESS\n"                                 );
+    GET_VULKAN_RES_CODE(  1 , "VK_NOT_READY\n"                               );
+    GET_VULKAN_RES_CODE(  2 , "VK_TIMEOUT\n"                                 );
+    GET_VULKAN_RES_CODE(  3 , "VK_EVENT_SET\n"                               );
+    GET_VULKAN_RES_CODE(  4 , "VK_EVENT_RESET\n"                             );
+    GET_VULKAN_RES_CODE(  5 , "VK_INCOMPLETE\n"                              );
+    GET_VULKAN_RES_CODE( -1 , "VK_ERROR_OUT_OF_HOST_MEMORY\n"                );
+    GET_VULKAN_RES_CODE( -2 , "VK_ERROR_OUT_OF_DEVICE_MEMORY\n"              );
+    GET_VULKAN_RES_CODE( -3 , "VK_ERROR_INITIALIZATION_FAILED\n"             );
+    GET_VULKAN_RES_CODE( -4 , "VK_ERROR_DEVICE_LOST\n"                       );
+    GET_VULKAN_RES_CODE( -5 , "VK_ERROR_MEMORY_MAP_FAILED\n"                 );
+    GET_VULKAN_RES_CODE( -6 , "VK_ERROR_LAYER_NOT_PRESENT\n"                 );
+    GET_VULKAN_RES_CODE( -7 , "VK_ERROR_EXTENSION_NOT_PRESENT\n"             );
+    GET_VULKAN_RES_CODE( -8 , "VK_ERROR_FEATURE_NOT_PRESENT\n"               );
+    GET_VULKAN_RES_CODE( -9 , "VK_ERROR_INCOMPATIBLE_DRIVER\n"               );
+    GET_VULKAN_RES_CODE( -10, "VK_ERROR_TOO_MANY_OBJECTS\n"                  );
+    GET_VULKAN_RES_CODE( -11, "VK_ERROR_FORMAT_NOT_SUPPORTED\n"              );
+    GET_VULKAN_RES_CODE( -1000000000, "VK_ERROR_SURFACE_LOST_KHR\n"          );
+    GET_VULKAN_RES_CODE( -1000000001, "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR\n"  );
+    GET_VULKAN_RES_CODE(  1000001003, "VK_SUBOPTIMAL_KHR\n"                  );
+    GET_VULKAN_RES_CODE( -1000001004, "VK_ERROR_OUT_OF_DATE_KHR\n"           );
+    GET_VULKAN_RES_CODE( -1000003001, "VK_ERROR_INCOMPATIBLE_DISPLAY_KHR\n"  );
+    GET_VULKAN_RES_CODE( -1000011001, "VK_ERROR_VALIDATION_FAILED_EXT\n"     );
+    GET_VULKAN_RES_CODE(  0x7FFFFFFF, "VK_RESULT_MAX_ENUM\n"                 );
+    GET_VULKAN_RES_CODE( VK_RESULT_RANGE_SIZE , "VK_RESULT_RANGE_SIZE\n"     );
+    default : std::cerr << "UNKNOWN_ERROR\n";
+  }
+}
+
+// Function to check for an error, print the vulkan error and the optional
+// error message, if error handling is enabled.
+//
+// \param AssertHandlingType The type of assert handling -- this either enabled
+// the assertation function or removes the assert code, depending on the type.
+template <typename AssertHandlingType = AssertHandling>
+typename std::enable_if<
+  detail::supports_assert_handling<AssertHandlingType>::value, void>::type
+vwAssert(bool condition, const std::string& message = "",
+    const std::string file = "", int line = 0) {
+  if (!condition) {
+    std::cerr << "Failure at         : " << file    << " : " << line << ".\n" 
+              << "Additional message : " << message << ".\n\n";
+    exit(EXIT_FAILURE);
+  }
+}
+
+// Implementation of the assert function for when assertations are not enabled.
+//
+// \param AssertHanldingType The type of assert handling -- for this insance
+// this is a type which does not support assert handling.
+template <typename AssertHandlingType = AssertHandling>
+typename std::enable_if<
+  !detail::supports_assert_handling<AssertHandlingType>::value, void>::type
+vwAssert(bool condition, const std::string& message = "", 
+    const std::string& file = __FILE__, int line = __LINE__) {
+  // Does noting so that when this instance of the assert is called, the
+  // compiler can optimize it out ...
+}
+
+// Function which asserts when assertation handling is enabled and if the reult
+// code of the vulkan result type is a failure.
+//
+// \tparam AssertHandlingType The type to check for assertation handling -- for
+// this insance of the function this will be true.
+template <typename AssertHandlingType = AssertHandling>
+typename std::enable_if<
+  detail::supports_assert_handling<AssertHandlingType>::value, void>::type 
+vwAssertSuccess(VkResult result, const std::string& message = "",
+    const std::string& file = "", int line = 0) {
+  if (result != 0) {
+    std::cerr << "Failure at         : " << file << " : " << line << ".\n"
+              << "Error code         : ";
+    printVulkanResult(result);
+    std::cerr << "Additional message : " << message << "\n";
+    exit(EXIT_FAILURE);
+  }
+}
+
+// Function which removed the assertation check when assrtation handling is
+// disabled. 
+//
+// \tparam AssertHandlingType The type to checks for assertation handling --
+// for this inastance of the function this will be false.
+template <typename AssertHandlingType = AssertHandling>
+typename std::enable_if<
+  !detail::supports_assert_handling<AssertHandlingType>::value, void>::type
+vwAssertSuccess(VkResult result, const std::string& message = "",
+    const std::string file = "", int line = 0) {
+  // Does nothing so that when this instance of the assert is called, the
+  // compiler can optimize it out ...
+}
+
+}  // namespace util
+
+//---- MACROS =/ ------------------------------------------------------------//
+
+#define vwAssert(condition, message)                                          \
+  util::vwAssert(condition, message, __FILE__, __LINE__)
+
+#define vwAssertSuccess(result, message)                                      \
+  util::vwAssertSuccess(result, message, __FILE__, __LINE__)
+ 
 #endif  // VULKAN_VULKAN_VULKAN_WRAPPER_H
 
 

@@ -28,13 +28,10 @@ namespace {
 // \param vwDeviceSpecifiers  The specifiers to find a match with.
 size_t findDeviceTypeIndex(const VkPhysicalDevice& vkPhysicalDevice, 
                            const VwDeviceSpecVec& vwDeviceSpecifiers) {
-  VkResult                   result;
   size_t                     specifierIndex           = 0;
   VkPhysicalDeviceProperties physicalDeviceProperties = {};
 
   vkGetPhysicalDeviceProperties(vkPhysicalDevice, &physicalDeviceProperties);
-  assert(!result && "Failed to get properties of physical device : "
-         && "Fatal Error\n");
 
   for (const auto& deviceSpecifier : vwDeviceSpecifiers) {
     if (static_cast<uint8_t>(physicalDeviceProperties.deviceType) ==
@@ -104,21 +101,19 @@ VkResult VulkanBase::createInstance(const char* appName,
  
 void VulkanBase::getPhysicalDevices(const VwDeviceSpecVec& deviceSpecifiers, 
     bool devicesMustSupportAllQueues) {
-  assert(Instance != nullptr && "VkInstance not initializes so physical "
-         && "devices cannot be found\n");
+  vwAssert(Instance != nullptr , "Vulkan instance not initialized.\n");
 
   uint32_t deviceCount = 0;
   VkResult result      = vkEnumeratePhysicalDevices(Instance, &deviceCount,
                            nullptr);
-  assert(!result && "Failed to enumerate physical devices : Fatal Error\n");
-  assert(deviceCount >= 1 && "Failed to find any physical devices : "
-         && "Fatal Error\n");
+  vwAssertSuccess(result, "Failed to enumerate physical devices.\n");
+  vwAssert(deviceCount >= 1, "Failed to find any physical devices.\n");
 
   std::vector<VkPhysicalDevice> physicalDevices;
   physicalDevices.resize(deviceCount); 
   result = vkEnumeratePhysicalDevices(Instance, &deviceCount, 
              physicalDevices.data());
-  assert(!result && "Could not enumerate physical devices : Fatal Error\n");
+  vwAssertSuccess(result, "Could not enumerate physical devices.\n");
 
   // Go through all the physical devices and check if they are
   // one of the requested types and have the correct queues.
@@ -144,6 +139,6 @@ void VulkanBase::getPhysicalDevices(const VwDeviceSpecVec& deviceSpecifiers,
     }
   }
 
-  assert(PhysicalDevices.size() >= 1 && "Failed to find a physical device "
-         && "which meets the reequested specifiers : Fatal Error\n");
+  vwAssert(PhysicalDevices.size() >= 1, "Failed to find a physical " +
+    std::string("device which meets the requested specifiers .\n"));
 }
