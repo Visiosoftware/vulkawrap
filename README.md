@@ -1,12 +1,9 @@
-# vulkan
-Some well documented C++ vulkan examples.
+*Simplifying Vulkan*
 
-This repository aims to document some vulkan examples so that others may find
-the process more simple. I intend to write some basic tutorials to explain some
-of the concepts and problems I came across when implementing these examples.
+# VulkaWrap
 
-I am definitely not a vulkan expert, but hopefully something will be useful.
-The tutorials and completed source code should be up in the next few weeks!
+VulkaWrap intends to simplify Vulkan by wrapping the functionality into a cleaner C++ interface, resulting in less code, but still allowing the contorol and configurability of native Vulkan code.
 
-If there are any specific examples you would like to see implemented, drop me
-an email at [robjclucas@gmail.com](@mailto:robjclucas@gmail.com).
+Numerous examples will be included to demonstrate the use of the library. Additionally, documentation will be added shortly, and will be updated each time new functionality is introduced.
+
+If there are any specific examples you would like to see implemented, send me an email at [robjclucas@gmail.com](@mailto:robjclucas@gmail.com).
