@@ -1,24 +1,29 @@
-//---- src/vulkan/io.h - Functions performing IO ----------------------------//
+//---- include/visiosoft/vulkawrap/io.h -------------------- -*- C++ -*- ----//
+//---- Functions for performing IO.                                      ----//
 //
-//                        Vulkan Examples/Tutorials
+//                           Visiosoft VulkaWrap
 //                          
-//                        Copyright (c) 2016 Rob Clucas        
-//                      Distributed under the MIT License
+//                      Copyright (c) 2016 Rob Clucas        
+//                    Distributed under the MIT License
 //                (See accompanying file LICENSE or copy at
 //                    https://opensource.org/licenses/MIT)
 //
 // ========================================================================= //
 //
 /// \file   io.h
-/// \brief  Defines all the io related functions.
+/// \brief  Defines all the io related functions for the VulkaWrap library.
 //
 //---------------------------------------------------------------------------//
 
-#ifndef VULKAN_IO_H
-#define VULKAN_IO_H
+#ifndef VISIOSOFT_VULKAWRAP_IO_H
+#define VISIOSOFT_VULKAWRAP_IO_H
 
-namespace vs {
-namespace io {
+#include <iostream>
+#include <vulkan/vulkan.h>
+
+namespace vs    {
+namespace vwrap {
+namespace io    {    
 
 /// Prints the name of a VkResult type.
 ///
@@ -57,8 +62,8 @@ void printVulkanResult(VkResult result) {
   }
 }
 
-}  // namespace io
-}  // namespace vs
+} // namespace io
+} // namespace vwrap
+} // namespace vs
 
-#endif  // VULKAN_IO_H
-
+#endif  // VISIOSOFT_VULKAWRAP_IO_H

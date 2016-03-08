@@ -1,6 +1,7 @@
-//---- src/vulkan/error.hpp - Vulkan errors handling functions --------------//
+//---- include/visiosoft/vulkawrap/util/error.hpp ---------- -*- C++ -*- ----//
+//---- Error handling functionality for Visiosoft VulkaWrap.             ----//
 //
-//                        Vulkan Examples/Tutorials
+//                             Visiosoft VulkaWrap
 //                          
 //                        Copyright (c) 2016 Rob Clucas        
 //                      Distributed under the MIT License
@@ -9,16 +10,18 @@
 //
 // ========================================================================= //
 //
-// \file   error.hpp
-// \brief  Defines error handling functions for vulkan.
+/// \file   error.hpp
+/// \brief  Defines error handling functionality for the VulkaWrap library, to
+///         allow error handling and assertation functonality to be removed
+///         using a configuration paramter when performance is required.
 //
 //---------------------------------------------------------------------------//
 
-#ifndef VULKAN_VULKAN_ERROR_HPP
-#define VULKAN_VULKAN_ERROR_HPP
+#ifndef VISIOSOFT_VULKAWRAP_UTIL_ERROR_HPP
+#define VISIOSOFT_VULKAWRAP_UTIL_ERROR_HPP
 
-#include "config.hpp"
-#include "io.h"
+#include "visiosoft/vulkawrap/config/config.hpp"
+#include "visiosoft/vulkawrap/io.h"
 #include <type_traits>
 
 namespace vs {
@@ -26,7 +29,7 @@ namespace vs {
 using ErrorHandlingType  = uint8_t;
 using AssertHandlingType = uint8_t;
 
-namespace err {
+namespace util   {
 namespace detail {
 
 /// Metafunction to test if error handling is enabled.
@@ -47,7 +50,7 @@ struct assert_handling_enabled {
   static constexpr bool value = HandlingType;
 };
 
-}  // namespace detail
+} // namespace detail
 
 /// Function which assert a condition, and takes an optinal message to describe
 /// the error. If the assertation fails the program exits.
@@ -57,10 +60,11 @@ struct assert_handling_enabled {
 ///         fails.
 /// \tparam AssertHandling The type of assert handling which is supported. This
 ///         is either config::AssertHandlingOn or config::AssertHandlingOff.
-template <AssertHandlingType AssertHandling = config::AssertHandlingSupport>
+template <AssertHandlingType AssertHandling = vwrap::config::AssertHandlingCx>
 typename std::enable_if<
-  detail::assert_handling_enabled<AssertHandling>::value, void>::type
-vwAssert(bool condition, const std::string& message = "",
+  detail::assert_handling_enabled<AssertHandling>::value, void
+>::type
+assert(bool condition, const std::string& message = "",
     const std::string file = "", int line = 0) {
   if (!condition) {
     std::cerr << "Failure at         : " << file    << " : " << line << ".\n" 
@@ -79,14 +83,25 @@ vwAssert(bool condition, const std::string& message = "",
 ///         fails.
 /// \tparam AssertHandling The type of assert handling which is supported. This
 ///         is either config::AssertHandlingOn or config::AssertHandlingOff.
-template <AssertHandlingType AssertHandling = config::AssertHandlingSupport>
+template <AssertHandlingType AssertHandling = vwrap::config::AssertHandlingCx>
 typename std::enable_if<
-  !detail::assert_handling_enabled<AssertHandling>::value, void>::type
-vwAssert(bool condition, const std::string& message = "", 
+  !detail::assert_handling_enabled<AssertHandling>::value, void
+>::type
+assert(bool condition, const std::string& message = "", 
     const std::string& file = "", int line = 0) {
   // Does noting so that when this instance of the assert is called, the
   // compiler can optimize it out ...
 }
+
+#define Assert(condition, message)                                            \
+  assert(condition, message, __FILE__, __LINE__)
+
+} // namespace util
+
+namespace vwrap {
+namespace util  {
+
+using namespace vs::util;
 
 /// Function which asserts that the result of a vulkan operation was a success,
 /// and takes an optional message to print when the assertation fails.
@@ -99,10 +114,11 @@ vwAssert(bool condition, const std::string& message = "",
 ///         checked.
 /// \tparam AssertHandling The type of assert handling which is supported. This
 ///         is either config::AssertHandlingOn or config::AssertHandlingOff.
-template <AssertHandlingType AssertHandling = config::AssertHandlingSupport>
+template <AssertHandlingType AssertHandling = config::AssertHandlingCx>
 typename std::enable_if<
-  detail::assert_handling_enabled<AssertHandling>::value, void>::type 
-vwAssertSuccess(VkResult result, const std::string& message = "",
+  detail::assert_handling_enabled<AssertHandling>::value, void
+>::type 
+assertSuccess(VkResult result, const std::string& message = "",
     const std::string& file = "", int line = 0) {
   if (result != 0) {
     std::cerr << "Failure at         : " << file << " : " << line << ".\n"
@@ -124,26 +140,22 @@ vwAssertSuccess(VkResult result, const std::string& message = "",
 ///         checked.
 /// \tparam AssertHandling The type of assert handling which is supported. This
 ///         is either config::AssertHandlingOn or config::AssertHandlingOff.
-template <AssertHandlingType AssertHandling = config::AssertHandlingSupport>
+template <AssertHandlingType AssertHandling = config::AssertHandlingCx>
 typename std::enable_if<
-  !detail::assert_handling_enabled<AssertHandling>::value, void>::type
-vwAssertSuccess(VkResult result, const std::string& message = "",
+  !detail::assert_handling_enabled<AssertHandling>::value, void
+>::type
+assertSuccess(VkResult result, const std::string& message = "",
     const std::string file = "", int line = 0) {
   // Does nothing so that when this instance of the assert is called, the
   // compiler can optimize it out ...
 }
 
-//---- MACROS =/ ------------------------------------------------------------//
-
-#define vwAssert(condition, message)                                          \
-  util::vwAssert(condition, message, __FILE__, __LINE__)
-
-#define vwAssertSuccess(result, message)                                      \
-  util::vwAssertSuccess(result, message, __FILE__, __LINE__)
+#define AssertSuccess(result, message)                                        \
+  assertSuccess(result, message, __FILE__, __LINE__)
  
+} // namespace util
+} // namespace vwrap
+} // namespace vs 
 
-}  // namespace err
-}  // namespace vs
-
-#endif  // VULKAN_VULKAN_ERROR_HPP
+#endif  // VISIOSOFT_VULKAWRAP_UTIL_ERROR_HPP
 
