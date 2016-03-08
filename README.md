@@ -1,5 +1,3 @@
-*Simplifying Vulkan*
-
 # VulkaWrap
 
 VulkaWrap intends to simplify Vulkan by wrapping the functionality into a cleaner C++ interface, resulting in less code, but still allowing the contorol and configurability of native Vulkan code.
