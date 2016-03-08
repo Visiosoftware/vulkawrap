@@ -24,51 +24,94 @@ namespace vs    {
 namespace vwrap {
 namespace       {
 
-/// Checks if a vkPhysicalDevice fits one of the DeviceSpecifier type
-/// specificationas. If a match is found then the index of the match is 
-/// returned, otherwise a one past the end index is returned (which will be
-/// equal to the number of DeviceSpecifiers provided).
+/// Checks if a Vulkan Physical Device matches a device specifier types. 
+/// Returns true if the physical device meets the type requirements of the 
+/// specifier.
 ///
 /// \param vkPhysicalDevice The vulkan physical device to check.
-/// \param deviceSpecifiers The specifiers to try and find a match with.
-size_t findDeviceTypeIndex(const VkPhysicalDevice&   vkPhysicalDevice, 
-                           const DeviceSpecifierVec& deviceSpecifiers) {
-  size_t                     specifierIndex           = 0;
+/// \param deviceSpecifier  The specifier to try and find a match with.
+bool physicalDeviceTypeIsCorrect(const VkPhysicalDevice& vkPhysicalDevice, 
+                                 const DeviceSpecifier&  deviceSpecifier) {
   VkPhysicalDeviceProperties physicalDeviceProperties = {};
-
   vkGetPhysicalDeviceProperties(vkPhysicalDevice, &physicalDeviceProperties);
 
-  for (const auto& deviceSpecifier : deviceSpecifiers) {
-    if (static_cast<uint8_t>(physicalDeviceProperties.deviceType) ==
-        static_cast<uint8_t>(deviceSpecifier.deviceType)          ) {
-      break;
-    }
-    if (deviceSpecifier.deviceType == DeviceType::VW_ANY)
-      break;
-
-    ++specifierIndex;
+  if (static_cast<uint8_t>(physicalDeviceProperties.deviceType) ==
+      static_cast<uint8_t>(deviceSpecifier.deviceType)          ) {
+    return true;
   }
-  // We return the inverse because we want to return true for all devices
-  // which are 
-  return specifierIndex;
+  if (deviceSpecifier.deviceType == DeviceType::VW_ANY)
+    return true;
+
+  return false;
 }
 
 } // annonymous namespace
  
 //---- Public ---------------------------------------------------------------//
 
-DeviceSelector::DeviceSelector(const DeviceSpecifierVec& deviceSpecifiers, 
+DeviceSelector::DeviceSelector(DeviceSpecifier& deviceSpecifier, 
+    bool deviceMustSupportAllQueues, const char* appName, 
+    const char* engineName, const std::vector<const char*>& extensions)
+:   PhysicalDevices(0) { 
+  createInstance(appName, engineName, extensions);
+  vs::util::Assert(Instance != nullptr , "Vulkan instance not initialized.\n");
+
+  auto physicalDevices = getPhysicalDevices();
+
+  // Go through the physical devices and add those which match the specifier
+  for (auto& physicalDevice : physicalDevices) {
+    if (!physicalDeviceTypeIsCorrect(physicalDevice, deviceSpecifier))
+      continue;  // Go to next iteration if the device type is incorrect.
+
+    if (addIfQueuesAreSupported(physicalDevice, deviceSpecifier.queueTypes, 
+          deviceMustSupportAllQueues) == true) {
+      deviceSpecifier.valid = true;
+    } else {
+      deviceSpecifier.valid = false;
+    }
+  }
+}
+
+
+DeviceSelector::DeviceSelector(DeviceSpecifierVec& deviceSpecifiers, 
     bool devicesMustSupportAllQueues, const char* appName, 
     const char* engineName, const std::vector<const char*>& extensions)
 :   PhysicalDevices(0) { 
   createInstance(appName, engineName, extensions);
+  vs::util::Assert(Instance != nullptr , "Vulkan instance not initialized.\n");
 
-  // Filter out all the devices which do not match the physical 
-  // device types and the queue types for those devices.
-  filterPhysicalDevices(
-    std::forward<const DeviceSpecifierVec&&>(deviceSpecifiers), 
-    devicesMustSupportAllQueues                               
-  );
+  auto physicalDevices = getPhysicalDevices();
+
+  for (auto& physicalDevice : physicalDevices) {
+    for (auto& deviceSpecifier : deviceSpecifiers) {
+      if (!physicalDeviceTypeIsCorrect(physicalDevice, deviceSpecifier))
+        continue;  // Go to next iteration if the device type is incorrect.
+
+      if (addIfQueuesAreSupported(physicalDevice, deviceSpecifier.queueTypes, 
+            devicesMustSupportAllQueues)) {
+        deviceSpecifier.valid = true;
+      } else {
+        deviceSpecifier.valid = false;
+      }
+    }
+  }
+}
+
+bool DeviceSelector::addIfQueuesAreSupported(
+    const VkPhysicalDevice& vkPhysicalDevice, 
+    const QueueTypeVec& queueTypes          , 
+    bool  mustSupportAllQueues              ) {
+  PhysicalDevices.emplace_back(vkPhysicalDevice);
+  PhysicalDevices.back().addSupportedQueues(queueTypes);
+
+  // Remove the device if it must support all queues
+  // and not all the requested queus were found.
+  if (mustSupportAllQueues && 
+      (PhysicalDevices.back().queueTypes.size() != queueTypes.size())) {
+    PhysicalDevices.pop_back();
+    return false;
+  } 
+  return true;
 }
 
 //---- Private --------------------------------------------------------------//
@@ -106,12 +149,8 @@ VkResult DeviceSelector::createInstance(const char* appName,
   }
   return vkCreateInstance(&instanceInfo, nullptr, &Instance); 
 }
- 
-void DeviceSelector::filterPhysicalDevices(
-    const DeviceSpecifierVec& deviceSpecifiers, 
-    bool devicesMustSupportAllQueues          ) {
-  vs::util::Assert(Instance != nullptr , "Vulkan instance not initialized.\n");
 
+std::vector<VkPhysicalDevice> DeviceSelector::getPhysicalDevices() const {
   uint32_t deviceCount = 0;
   VkResult result      = vkEnumeratePhysicalDevices(Instance, &deviceCount,
                            nullptr);
@@ -123,33 +162,7 @@ void DeviceSelector::filterPhysicalDevices(
   result = vkEnumeratePhysicalDevices(Instance, &deviceCount, 
              physicalDevices.data());
   util::AssertSuccess(result, "Could not enumerate physical devices.\n");
-
-  // Go through all the physical devices and check if they are
-  // one of the requested types and have the correct queues.
-  size_t deviceTypeId = 0;
-  for (const auto& vkPhysicalDevice : physicalDevices) {
-    deviceTypeId = findDeviceTypeIndex(vkPhysicalDevice, deviceSpecifiers);
-    if (deviceTypeId == deviceSpecifiers.size())
-      continue;   // Not a supported device -- next iteration.
-    
-    // The device has a correct type, so create a VulkaWrap PhysicalDevice 
-    // and add the requested queues which the device supports.
-    PhysicalDevices.emplace_back(vkPhysicalDevice);
-    PhysicalDevices.back().addSupportedQueues(
-      deviceSpecifiers[deviceTypeId].queueTypes
-    );
-
-    // Remove the device if it must support all queues
-    // and not all the requested queus were found.
-    if (devicesMustSupportAllQueues && 
-        (PhysicalDevices.back().queueTypes.size() != 
-         deviceSpecifiers[deviceTypeId].queueTypes.size())) {
-      PhysicalDevices.pop_back();
-    }
-  }
-
-  vs::util::Assert(PhysicalDevices.size() >= 1, "Failed to find a physical " +
-    std::string("device which meets the requested specifiers.\n"));
+  return physicalDevices;
 }
 
 }  // namespace vwrap

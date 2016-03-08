@@ -16,11 +16,21 @@
 //---------------------------------------------------------------------------//
 
 #include <visiosoft/vulkawrap/device/selector.h>
+#include <iostream>
 
 int main() {
   using namespace vs::vwrap;
 
-  DeviceSelector deviceSelector(
-      DeviceSpecifierVec{ { DeviceType::VW_ANY, QueueType::VW_ANY } }
-  );
+  // Define the DeviceSpecifier for the types of devices we want.
+  DeviceSpecifier anyDevice(DeviceType::VW_ANY, QueueType::VW_ANY);
+  DeviceSpecifier graphicsDevice(DeviceType::VW_ANY, 
+                                 QueueType::VW_GRAPHICS_QUEUE);
+  DeviceSpecifierVec specifiers{ anyDevice, graphicsDevice };
+ 
+  // Create a device selector to find the devices.
+  DeviceSelector deviceSelector(specifiers);
+
+  // Check if a graphics device is found, otherwise we can't draw!
+  if (!graphicsDevice.valid)
+    std::cerr << "Can't present without graphics device!\n";
 }

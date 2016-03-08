@@ -28,6 +28,7 @@ namespace vwrap {
 //---- Forward declarations -------------------------------------------------//
 
 struct      DeviceSpecifier;
+struct      DeviceView;
 struct      PhysicalDevice;
 enum class  DeviceType : uint8_t;
 
@@ -38,6 +39,10 @@ using PhysicalDeviceVec = std::vector<PhysicalDevice>;
 
 /// Alias for a vector of VulkaWrap DeviceSpecifier's.
 using DeviceSpecifierVec = std::vector<DeviceSpecifier>;
+
+/// Alias for a vector of VulkaWrap DeviceViews, which are essentially VKDevice 
+/// types but for the VulkaWrap physical device, rather than the Vulkan device.
+using DeviceViewVec = std::vector<DeviceView>;
 
 //---- Implementations ------------------------------------------------------//
 
@@ -113,6 +118,11 @@ struct PhysicalDevice {
 /// Struct for specifying a type of physical device and the type of queues 
 /// which it needs to support.
 struct DeviceSpecifier {
+  DeviceType    deviceType; //!< The type of device to look for.
+  QueueTypeVec  queueTypes; //!< The types of queues the device must support.
+  bool          valid;      //!< If the device specifier is valid -- a device
+                            //!< matching the specifiers was found.
+
   /// Constructor to specify the device type and the queues it needs to
   /// support.
   ///
@@ -133,10 +143,7 @@ struct DeviceSpecifier {
   template <typename QType, typename... QTypes, typename = 
             std::enable_if_t<std::is_same<QueueType, QType>::value>>
   DeviceSpecifier(DeviceType device, QType qType, QTypes... qTypes)
-  : deviceType(device), queueTypes{qType, qTypes...} {}
-
-  DeviceType    deviceType; //!< The type of device to look for.
-  QueueTypeVec  queueTypes; //!< The types of queues the device must support.
+  : deviceType(device), queueTypes{qType, qTypes...}, valid(false) {}
 };
 
 /// Class which allows vulkan physical devices to be selected based on their
@@ -146,15 +153,40 @@ struct DeviceSpecifier {
 /// Example usage:
 /// \code 
 /// using namespace vs::vwrap;
-/// DeviceSelector deviceSelector(DeviceSpecifierVec{ 
-///  { DeviceType::VW_ANY, QueueType::VW_GRAPHICS_QUEUE } };
+/// DeviceSpecifier graphicsDevice(DeviceType::VW_ANY, 
+///                                QueueType::VW_GRAPHICS_QUEUE);
+/// DeviceSpecifier cpuComputeDevice(DeviceType::VW_CPU,
+///                                  QueueType::VW_COMPUTE_QUEUE);
+///
+/// DeviceSelector deviceSelector(
+///   DeviceSpecifierVec{ graphicsDevice, cpuCOmputeDevice }
 /// );
+///
+/// // Check which devices were found 
+/// if (!graphicsDevice.valid) 
+///   // Error, can't present ...
 /// /endcode
 class DeviceSelector {
  public:
-  /// Constructor which:  
-  ///   - Creates a Vulkan Instance
-  ///   - Enumerates Physical Devices
+  /// Constructor which takes a single device specifier for the type of
+  /// physical device which is wanted.
+  ///
+  /// \param deviceSpecifier            The specifier for the properties of the 
+  ///        device.
+  /// \param deviceMustSUpportAllQueues Only add the device if all the
+  ///        requested queues are found.
+  /// \param appName                    The name of the vulkan application.
+  /// \param engineName                 The name of the engine for this 
+  ///        application.
+  /// \param extensions                 The vulkan extensions to use.
+  DeviceSelector(DeviceSpecifier& deviceSpecifier                         ,
+    bool deviceMustSupportAllQueues            = true                     ,
+    const char* appName                        = ""                       , 
+    const char* engineName                     = ""                       ,
+    const std::vector<const char*>& extensions = std::vector<const char*>{});
+
+  /// Constructor which takes a vector of specifiers for the physical devices
+  /// which are wanted.
   ///
   /// \param deviceSpecifiers            The specifiers for the properties of 
   ///        each device.
@@ -165,11 +197,22 @@ class DeviceSelector {
   /// \param engineName                  The name of the engine for this 
   ///        application.   
   /// \param extensions                  The vulkan extensions to use.
-  DeviceSelector(const DeviceSpecifierVec& deviceSpecifiers,
+  DeviceSelector(DeviceSpecifierVec& deviceSpecifiers                      ,
     bool devicesMustSupportAllQueues           = true                      , 
     const char* appName                        = ""                        , 
     const char* engineName                     = ""                        ,
     const std::vector<const char*>& extensions = std::vector<const char*>{});
+
+  /// Adds a vulkan physical device to the vector of physical devices, if the
+  /// device has the requested queues, and returns true, otherwise returns
+  /// false.
+  ///
+  /// \param physicalDevice       The physical device to add.
+  /// \param queueTypes           The types of queues the device must support.
+  /// \param mustSupportAllQueues If the device must find all the queus to be
+  ///        added.
+  bool addIfQueuesAreSupported(const VkPhysicalDevice& physicalDevice, 
+    const QueueTypeVec& queueTypes, bool mustSupportAllQueues);
 
   /// Gets a vulkan physical device from the available physical devices.
   ///
@@ -198,14 +241,9 @@ class DeviceSelector {
   VkResult createInstance(const char* appName, const char* engineName,
     const std::vector<const char*>& extensions);
 
-  /// Filters all the physical devices which don't meet the requirements 
-  /// specified, and keeps those which do.
-  ///
-  /// \param deviceSpecifiers            A vector of device specifiers.
-  /// \param devicesMustSupportAllQueus  If the device must only be added if all
-  ///        of the queues in the DeviceSpecifer are found.
-  void filterPhysicalDevices(const DeviceSpecifierVec& deviceSpecifiers,
-                             bool devicesMustSupportAllQueues);
+  /// Gets all the physical devices available, and returns a vector of the
+  /// devices.
+  std::vector<VkPhysicalDevice> getPhysicalDevices() const;
 };
 
 } // namespace vwrap
