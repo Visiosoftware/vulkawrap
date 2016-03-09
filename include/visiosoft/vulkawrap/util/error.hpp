@@ -101,8 +101,6 @@ assert(bool condition, const std::string& message = "",
 namespace vwrap {
 namespace util  {
 
-using namespace vs::util;
-
 /// Function which asserts that the result of a vulkan operation was a success,
 /// and takes an optional message to print when the assertation fails.
 ///
@@ -116,7 +114,7 @@ using namespace vs::util;
 ///         is either config::AssertHandlingOn or config::AssertHandlingOff.
 template <AssertHandlingType AssertHandling = config::AssertHandlingCx>
 typename std::enable_if<
-  detail::assert_handling_enabled<AssertHandling>::value, void
+  vs::util::detail::assert_handling_enabled<AssertHandling>::value, void
 >::type 
 assertSuccess(VkResult result, const std::string& message = "",
     const std::string& file = "", int line = 0) {
@@ -142,7 +140,7 @@ assertSuccess(VkResult result, const std::string& message = "",
 ///         is either config::AssertHandlingOn or config::AssertHandlingOff.
 template <AssertHandlingType AssertHandling = config::AssertHandlingCx>
 typename std::enable_if<
-  !detail::assert_handling_enabled<AssertHandling>::value, void
+  !vs::util::detail::assert_handling_enabled<AssertHandling>::value, void
 >::type
 assertSuccess(VkResult result, const std::string& message = "",
     const std::string file = "", int line = 0) {

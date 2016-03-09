@@ -22,6 +22,9 @@ include_directories (${VulkaWrap_SOURCE_DIR}/include)
 
 # --------------------     Make libraries in subdirs     -------------------- # 
 
-add_library (VwDeviceSelector visiosoft/vulkawrap/device/selector.cc)
+add_library ( VwInstance     visiosoft/vulkawrap/instance/instance.cc )
+add_library ( VwDeviceFilter visiosoft/vulkawrap/device/filter.cc     )
+
+link_libraries ( VwInstance VwDeviceFilter )
 
 # --------------------------------------------------------------------------- #

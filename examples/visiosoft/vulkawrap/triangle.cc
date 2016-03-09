@@ -15,20 +15,25 @@
 //
 //---------------------------------------------------------------------------//
 
-#include <visiosoft/vulkawrap/device/selector.h>
+#include <visiosoft/vulkawrap/device/filter.h>
 #include <iostream>
 
 int main() {
   using namespace vs::vwrap;
 
-  // Define the DeviceSpecifier for the types of devices we want.
+  UniqueInstance instance = makeUniqueInstance();
+
+  // Define the DeviceSpecifier for any device and ay queue,
+  // and another which must have a graphics queue. By default
+  // all the requested queues must be found, but by passing 
+  // false as the second parameter, a device will be created 
+  // if any of the specified queues are found.
   DeviceSpecifier anyDevice(DeviceType::VW_ANY, QueueType::VW_ANY);
   DeviceSpecifier graphicsDevice(DeviceType::VW_ANY, 
                                  QueueType::VW_GRAPHICS_QUEUE);
-  DeviceSpecifierVec specifiers{ anyDevice, graphicsDevice };
  
-  // Create a device selector to find the devices.
-  DeviceSelector deviceSelector(specifiers);
+  // Create a device filter -- moves ownershp of the instance to the filter.
+  DeviceFilter deviceFilter(std::move(instance), anyDevice, graphicsDevice);
 
   // Check if a graphics device is found, otherwise we can't draw!
   if (!graphicsDevice.valid)

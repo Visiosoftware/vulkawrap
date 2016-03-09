@@ -28,7 +28,7 @@ namespace io    {
 /// Prints the name of a VkResult type.
 ///
 /// \param result The VkResult type to print the name of.
-void printVulkanResult(VkResult result) {
+static void printVulkanResult(VkResult result) {
 #define GET_VULKAN_RES_CODE(code, msg)                                        \
   case (code) : std::cerr << (msg); break
 

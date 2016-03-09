@@ -32,9 +32,9 @@ endfunction()
 
 # --------------------         Triangle Example          -------------------- #
 
-set ( ExmplExe       triangle                        )
-set ( ExmplFiles     visiosoft/vulkawrap/triangle.cc ) 
-set ( ExmplLibs      VwDeviceSelector ${VULKAN_LIB}  )
+set ( ExmplExe       triangle                                 )
+set ( ExmplFiles     visiosoft/vulkawrap/triangle.cc          ) 
+set ( ExmplLibs      VwDeviceFilter VwInstance ${VULKAN_LIB}  )
 
 MakeExample (ExmplExe ExmplFiles ExmplLibs ExmplExeDir)
 
