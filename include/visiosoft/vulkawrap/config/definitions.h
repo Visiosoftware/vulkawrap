@@ -20,6 +20,8 @@
 #ifndef VISIOSOFT_VULKAWRAP_CONFIG_DEFINITIONS_H
 #define VISIOSOFT_VULKAWRAP_CONFIG_DEFINITIONS_H
 
+#include <stdint.h>
+
 namespace vs     {
 namespace vwrap  {
 namespace config {
