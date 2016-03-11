@@ -21,6 +21,7 @@
 
 #include "visiosoft/vulkawrap/util/error.hpp"
 #include <vulkan/vulkan.h>
+#include <atomic>
 #include <memory>
 #include <vector>
 
@@ -62,7 +63,29 @@ namespace vs    {
 /// concurrently, but incurrs the overhead that the cuncurrent incrementation
 /// decrementation brings.
 class ConcurrentReferenceCounter {
+ public:
+  /// Initializes the count.
+  void initialize() {
+    Count.store(1);
+  }
 
+  /// Increments the reference count.
+  void increment() { 
+    ++Count;
+  }
+
+  /// Decrements the reference count.
+  void decrement() {
+    --Count;
+  }
+
+  /// Gets the reference count.
+  uint32_t count() const {
+    return Count.load();
+  }
+
+ private:
+  std::atomic<uint32_t> Count;  //!< The number of references.
 };
 
 /// Reference counting class. This implementation is not thread safe, and is

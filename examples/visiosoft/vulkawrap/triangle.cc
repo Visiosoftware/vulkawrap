@@ -22,6 +22,9 @@ int main() {
   using namespace vs::vwrap;
 
   UniqueInstance instance = makeUniqueInstance();
+  NonConcurrentSharedInstance  ncSharedInstance;
+  ConcurrentSharedInstance     cSharedInstance;
+
 
   // Define the DeviceSpecifier for any device and ay queue,
   // and another which must have a graphics queue. By default
