@@ -18,7 +18,7 @@
 #ifndef VULKAWRAP_INSTANCE_INSTANCE_H
 #define VULKAWRAP_INSTANCE_INSTANCE_H
 
-#include "vulkawrap/util/error.hpp"
+#include "vulkawrap/util/assert.hpp"
 #include <vulkan/vulkan.h>
 #include <atomic>
 #include <memory>
@@ -36,7 +36,7 @@ class SharedInstance;
 
 namespace detail {
  struct Instance;
-}l
+} // namespace detail
 
 //---- Aliases --------------------------------------------------------------//
 
@@ -50,7 +50,7 @@ using NonConcurrentSharedInstance =
 
 /// Alias for a unique Instance, for when complete
 /// control over the instance is required.
-using UniqueInstance = std::unique_ptr<detail::Ins`tance>;
+using UniqueInstance = std::unique_ptr<detail::Instance>;
 
 //---- Implementations ------------------------------------------------------//
 
@@ -118,8 +118,9 @@ namespace detail {
 /// resource handling of the instance. This is designed as an implementation
 /// detail class which should be further wrapped by an instance couning
 /// classes, to provide shared and unique instance functionality.
-class Instance {
- public:
+struct Instance {
+  VkInstance vkInstance;  //!< The vulkan instance which is being wrapped.
+
   /// Constructor to create an Instance.
   ///
   /// \param appName    The name of the application for this instance.
@@ -139,9 +140,6 @@ class Instance {
   ~Instance() {
      vkDestroyInstance(vkInstance, nullptr);
    } 
-
- private:
-  VkInstance vkInstance;  //!< The vulkan instance which is being wrapped.
 };
 
 } // namespace detail 

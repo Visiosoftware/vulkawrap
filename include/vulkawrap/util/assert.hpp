@@ -47,7 +47,7 @@ void assertSuccess(VkResult, const std::string&, const std::string&, int);
     condition, message, __FILE__, __LINE__)
 
 #define AssertSuccess(condition, message)           \
-  assertsSuccess<vwrap::config::AssertHandlingCx>(  \
+  assertSuccess<vwrap::config::AssertHandlingCx>(   \
     condition, message, __FILE__, __LINE__)
 
 //---- Implementations ------------------------------------------------------//

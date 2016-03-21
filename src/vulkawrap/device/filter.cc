@@ -47,7 +47,7 @@ std::vector<VkPhysicalDevice> DeviceFilter::getPhysicalDevices() const {
   VkResult result      = vkEnumeratePhysicalDevices(Instance->vkInstance, 
                            &deviceCount, nullptr);
   util::AssertSuccess(result, "Failed to enumerate physical devices.\n");
-  vs::util::Assert(deviceCount >= 1, "Failed to find any physical devices.\n");
+  util::Assert(deviceCount >= 1, "Failed to find any physical devices.\n");
 
   std::vector<VkPhysicalDevice> physicalDevices;
   physicalDevices.resize(deviceCount); 

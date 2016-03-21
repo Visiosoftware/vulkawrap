@@ -26,13 +26,13 @@ namespace config {
 ///   EnabledCx  - Enables assert checking code.
 ///   DisabledCx - Removes all assert checking code.
 ///   TestingCx  - Enables testing specializations of classes and functions.
-static constexpr uint8_t AssertHandlingCx = EnabledCx;
+static constexpr uint8_t AssertHandlingCx = TestingCx; 
 
 /// Allows or removes error handling code, it can be:
 ///   EnabledCx  - Enables error handling code.
 ///   DisabledCx - Removes all error handling code.
 ///   TestingCx  - Enables testing specializations of classes and functions.
-static constexpr uint8_t ErrorHandlingCx = EnabledCx;
+static constexpr uint8_t ErrorHandlingCx = TestingCx;
 
 }  // namespace config
 }  // namespace vwrap
