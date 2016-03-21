@@ -1,7 +1,6 @@
-//---- include/visiosoft/vulkawrap/device/filter.h --------- -*- C++ -*- ----//
-//---- Provides functionality for filtering physical device.             ----//
+//---- include/vulkawrap/device/filter.h ------------------- -*- C++ -*- ----//
 //
-//                           Visiosoft Vulkawrap
+//                                Vulkawrap
 //                          
 //                      Copyright (c) 2016 Rob Clucas        
 //                    Distributed under the MIT License
@@ -11,20 +10,19 @@
 // ========================================================================= //
 //
 /// \file  filter.h
-/// \brief Defines a class with functionality to filter vulkan physical devices
-///        based on their device type and the queue tyoes they support.
+/// \brief Defines a class with functionality to filter Vulkan physical devices
+///        based on their device type and the queue types they support.
 //
 //---------------------------------------------------------------------------//
 
-#ifndef VISIOSOFT_VULKAWRAP_DEVICE_FILTER_H 
-#define VISIOSOFT_VULKAWRAP_DEVICE_FILTER_H
+#ifndef VULKAWRAP_DEVICE_FILTER_H 
+#define VULKAWRAP_DEVICE_FILTER_H
 
 #include "queue.h"
 #include "../instance/instance.h"
 #include <vulkan/vulkan.h>
 #include <memory>
 
-namespace vs    {
 namespace vwrap {
 
 //---- Forward declarations -------------------------------------------------//
@@ -68,8 +66,7 @@ struct PhysicalDevice {
   QueueIdVec          queueIds;     //!< The id's of the queues for the device.
 
   /// Default constructor -- sets the vectors to empty.
-  PhysicalDevice() 
-  : queueTypes(0), queueIds(0) {};
+  PhysicalDevice() : queueTypes(0), queueIds(0) {};
 
   /// Constructor which takes a vulkan physical device.
   ///
@@ -298,6 +295,5 @@ DeviceFilter::DeviceFilter(UniqueInstance instance,
 }
 
 } // namespace vwrap
-} // namespace vs
 
-#endif  // VISIOSOFT_VULKAWRAP_DEVICE_SELECTOR_H
+#endif  // VULKAWRAP_DEVICE_SELECTOR_H

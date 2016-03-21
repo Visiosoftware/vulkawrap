@@ -1,4 +1,5 @@
 # --------------------   CmakeLists.txt for VulkaWrap    -------------------- #
+
 # --------------------            Libraries              -------------------- #
 
 # --------------------      Try and find Modules         -------------------- #
@@ -18,12 +19,12 @@ ENDIF(WIN32)
 
 message(STATUS ${VULKAN_LIB})
 
-include_directories (${VulkaWrap_SOURCE_DIR}/include)
+include_directories ( ${VulkaWrap_SOURCE_DIR}/include )
 
 # --------------------     Make libraries in subdirs     -------------------- # 
 
-add_library ( VwInstance     visiosoft/vulkawrap/instance/instance.cc )
-add_library ( VwDeviceFilter visiosoft/vulkawrap/device/filter.cc     )
+add_library ( VwInstance     vulkawrap/instance/instance.cc )
+add_library ( VwDeviceFilter vulkawrap/device/filter.cc     )
 
 link_libraries ( VwInstance VwDeviceFilter )
 

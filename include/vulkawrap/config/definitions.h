@@ -1,8 +1,6 @@
-//---- include/visiosoft/vulkawrap/config/definitions.h ---- -*- C++ -*- ----//
-//---- Configuration related efinitions for the Visiosoft VulkaWrap      ----//
-//---- library.                                                          ----//
+//---- include/vulkawrap/config/definitions.h -------------- -*- C++ -*- ----//
 //
-//                          Visiosoft VulkaWrap
+//                                Vulkawrap
 //                          
 //                      Copyright (c) 2016 Rob Clucas        
 //                    Distributed under the MIT License
@@ -13,16 +11,15 @@
 //
 /// \file   config.hpp
 /// \brief  Defines configuration constants which can be used in the config.hpp 
-///         file to define the configuration for the build.
+///         file to define configuration properties for the build.
 //
 //---------------------------------------------------------------------------//
 
-#ifndef VISIOSOFT_VULKAWRAP_CONFIG_DEFINITIONS_H
-#define VISIOSOFT_VULKAWRAP_CONFIG_DEFINITIONS_H
+#ifndef VULKAWRAP_CONFIG_DEFINITIONS_H
+#define VULKAWRAP_CONFIG_DEFINITIONS_H
 
-#include <stdint.h>
+#include <cstdint>
 
-namespace vs     {
 namespace vwrap  {
 namespace config {
 
@@ -32,10 +29,13 @@ static constexpr uint8_t DisabledCx = 0;
 /// Definition which can be used to specify enabling functionality.
 static constexpr uint8_t EnabledCx  = 1;
 
+/// Definition which can be used to enable testing functionality for functions
+/// which are difficult to test but could allow a specific testing version.
+static constexpr uint8_t TestingCx  = 2;
+
 } // namespace config
 } // namespace vwrap
-} // namespace vs
 
-#endif  // VISIOSOFT_VULKAWRAP_CONFIG_DEFINITIONS_H
+#endif  // VULKAWRAP_CONFIG_DEFINITIONS_H
 
 

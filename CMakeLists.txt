@@ -21,14 +21,14 @@ set ( INSTALL_LIB_DIR     lib               CACHE PATH
 set ( INSTALL_BIN_DIR     bin               CACHE PATH 
   "Installation directory for binaries"   
 )
-set ( INSTALL_INCLUDE_DIR include/visiosoft CACHE PATH                                
+set ( INSTALL_INCLUDE_DIR include/vulkawrap CACHE PATH                                
  "Installation firectory for header files"
 )
 
 IF(WIN32 AND NOT CYGWIN)
   set ( DEF_INSTALL_CMAKE_DIR CMake )
 ELSE()
-  set ( DEF_INSTALL_CMAKE_DIR lib/CMake/Visiosoft )
+  set ( DEF_INSTALL_CMAKE_DIR lib/CMake/Vulkawrap )
 ENDIF()
 set ( INSTALL_CMAKE_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE PATH 
   "Installation directory for CMake files"
@@ -56,9 +56,15 @@ include_directories (
 
 # --------------------        Define Subdirectories      -------------------- #
 
-add_subdirectory ( src )
+add_subdirectory ( src      )
 add_subdirectory ( examples )
 add_subdirectory ( doc      )
+add_subdirectory ( tests    )
+
+# --------------------             Testing               -------------------- #
+
+enable_testing ()
+add_test       ( NAME VulkawrapUtilTests COMMAND UtilTests )
 
 # --------------------          Compiler Flags           -------------------- #
 

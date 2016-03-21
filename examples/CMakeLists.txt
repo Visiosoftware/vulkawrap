@@ -1,7 +1,7 @@
 # -------------------    CmakeLists.txt for VulkaWrap    -------------------- #
 # -------------------              Examples              -------------------- #
 
-include_directories ( ${VulkaWrap_SOURCE_DIR}/include )
+include_directories ( ${Vulkawrap_SOURCE_DIR}/include )
 
 # --------------------     Set Example Bin Directory     -------------------- #
 
@@ -19,7 +19,7 @@ function (MakeExample ExampleName ExampleFiles ExampleLibs ExampleBinDir)
   # Move the test binary into the TestsBin directory
   set_target_properties ( 
     ${${ExampleName}} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
-    ${VulkaWrap_SOURCE_DIR}/${${ExampleBinDir}}
+    ${Vulkawrap_SOURCE_DIR}/${${ExampleBinDir}}
   )
 
   # Add the test to the test execution
@@ -33,7 +33,7 @@ endfunction()
 # --------------------         Triangle Example          -------------------- #
 
 set ( ExmplExe       triangle                                 )
-set ( ExmplFiles     visiosoft/vulkawrap/triangle.cc          ) 
+set ( ExmplFiles     vulkawrap/triangle.cc                    ) 
 set ( ExmplLibs      VwDeviceFilter VwInstance ${VULKAN_LIB}  )
 
 MakeExample (ExmplExe ExmplFiles ExmplLibs ExmplExeDir)

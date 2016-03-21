@@ -1,8 +1,7 @@
-//---- src/visiosoft/vulkawrap/device/filter.cc ------------ -*- C++ -*- ----//
-//---- Implementation of device filtering functionality for VuulkaWrap.  ----//
+//---- src/vulkawrap/device/filter.cc ---------------------- -*- C++ -*- ----//
 //
-//                           Visiosoft VulkaWrap
-//                          
+//                                Vulkawrap
+//                                
 //                      Copyright (c) 2016 Rob Clucas        
 //                    Distributed under the MIT License
 //                (See accompanying file LICENSE or copy at
@@ -11,16 +10,15 @@
 // ========================================================================= //
 //
 /// \file   filter.cc
-/// \brief  Implementation of device filtering functionality for VulkaWrap,
+/// \brief  Implementation of device filtering functionality for Vulkawrap,
 ///         which provides a clean interface for filtering out physical devices
 ///         based on their type and the queue types which they support.
 //
 //---------------------------------------------------------------------------//
 
-#include "visiosoft/vulkawrap/device/filter.h"
-#include "visiosoft/vulkawrap/util/error.hpp"
+#include "vulkawrap/device/filter.h"
+#include "vulkawrap/util/assert.hpp"
 
-namespace vs    {
 namespace vwrap {
  
 //---- Public ---------------------------------------------------------------//
@@ -60,4 +58,3 @@ std::vector<VkPhysicalDevice> DeviceFilter::getPhysicalDevices() const {
 }
 
 }  // namespace vwrap
-}  // namespace vs

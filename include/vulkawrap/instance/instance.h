@@ -1,7 +1,6 @@
-//---- include/visiosoft/vulkawrap/instnace/instance.h ----- -*- C++ -*- ----//
-//---- Provides functionality for selecting vulkan devices.              ----//
+//---- include/vulkawrap/instance/instance.h --------------- -*- C++ -*- ----//
 //
-//                           Visiosoft Vulkawrap
+//                                Vulkawrap
 //                          
 //                      Copyright (c) 2016 Rob Clucas        
 //                    Distributed under the MIT License
@@ -12,56 +11,52 @@
 //
 /// \file  instance.h
 /// \brief Defines an instance class which is a wrapper around a Vulkan
-///        with a cleaner interface.
+///        instance with a more modern, cleaner C++ interface.
 //
 //---------------------------------------------------------------------------//
 
-#ifndef VISIOSOFT_VULKAWRAP_INSTANCE_INSTANCE_H
-#define VISIOSOFT_VULKAWRAP_INSTANCE_INSTANCE_H
+#ifndef VULKAWRAP_INSTANCE_INSTANCE_H
+#define VULKAWRAP_INSTANCE_INSTANCE_H
 
-#include "visiosoft/vulkawrap/util/error.hpp"
+#include "vulkawrap/util/error.hpp"
 #include <vulkan/vulkan.h>
 #include <atomic>
 #include <memory>
 #include <vector>
 
+namespace vwrap  {
+
 //---- Forward Declataions --------------------------------------------------//
-namespace vs     {
 
 class ConcurrentReferenceCounter;
 class NonConcurrentReferenceCounter;
 
-namespace vwrap  {
-
 template <typename ReferenceCounterType>
 class SharedInstance;
 
-} // namespace vwrap
-} // namespace vs
+namespace detail {
+ struct Instance;
+}l
 
 //---- Aliases --------------------------------------------------------------//
-
-namespace vs    {
-namespace vwrap {
 
 /// Alias for a concurrent shared instance.
 using ConcurrentSharedInstance =
   SharedInstance<ConcurrentReferenceCounter>;
 
-/// Alias for a concurrent shared instance.
+/// Alias for a non-concurrent shared instance.
 using NonConcurrentSharedInstance =
   SharedInstance<NonConcurrentReferenceCounter>;
 
-} // namespace vwrap
-} // namespace vs
+/// Alias for a unique Instance, for when complete
+/// control over the instance is required.
+using UniqueInstance = std::unique_ptr<detail::Ins`tance>;
 
-//---- Implementation -------------------------------------------------------//
+//---- Implementations ------------------------------------------------------//
 
-namespace vs    {
-
-/// Reference counting class. This implementation is thread safe and can be
-/// concurrently, but incurrs the overhead that the cuncurrent incrementation
-/// decrementation brings.
+/// Reference counting class. This implementation is thread safe and can
+/// be used concurrently, but incurrs the overhead that the cuncurrent 
+/// incrementation and decrementation brings.
 class ConcurrentReferenceCounter {
  public:
   /// Initializes the count.
@@ -90,7 +85,7 @@ class ConcurrentReferenceCounter {
 
 /// Reference counting class. This implementation is not thread safe, and is
 /// provided for the case that thread safety is not required and the additional
-/// performance gained by not including thread safety is desired.
+/// performance gained by removing the thread-safe functionality is justified.
 class NonConcurrentReferenceCounter {
  public:
   /// Initializes the count.
@@ -117,31 +112,15 @@ class NonConcurrentReferenceCounter {
   uint32_t Count;  //!< The number of references.
 };
 
-namespace vwrap {
-
-//---- Forward Declarations -------------------------------------------------//
-
-namespace detail {
- struct Instance;
-}
-
-//---- Aliases --------------------------------------------------------------//
-
-/// Alias for a unique Instance type. Instances should be unique, hence the
-/// wrapper around std::unique_ptr for an instance.
-///
-/// At a later stage additional supoprt may be added to allow UniqueInstances
-/// to be created from other UniqueInstances.
-using UniqueInstance = std::unique_ptr<detail::Instance>;
-
 namespace detail {
 
-/// Wrapper around a Vulkan with a cleaner interface with automatic destruction
-/// when the instance goes out of scope. This class should be used as a
-/// std::unique_ptr or an std::shared_ptr, depending on what ir required.
+/// Wrapper around a Vulkan Instance with a cleaner interface, and automatic
+/// resource handling of the instance. This is designed as an implementation
+/// detail class which should be further wrapped by an instance couning
+/// classes, to provide shared and unique instance functionality.
 class Instance {
  public:
-  /// Constructor to create an instance wrapper.
+  /// Constructor to create an Instance.
   ///
   /// \param appName    The name of the application for this instance.
   /// \param engineName The name of the engine for this application.
@@ -161,12 +140,13 @@ class Instance {
      vkDestroyInstance(vkInstance, nullptr);
    } 
 
+ private:
   VkInstance vkInstance;  //!< The vulkan instance which is being wrapped.
 };
 
 } // namespace detail 
 
-/// Shared instance, so that a single vulkan instance can be used multiple
+/// A shared Instance, so that a single vulkan instance can be used multiple
 /// times, and we can make sure that the instance is never cleaned if there is
 /// a pointer to it.
 ///
@@ -175,8 +155,8 @@ class Instance {
 template <typename RefCounter>
 class SharedInstance {
  public:
-  /// Constructor to create a shared instance. This initializes the instnace
-  /// count, creating a completelty new instance.
+  /// Constructor to create a shared instance. This initializes
+  /// the instance count, creating a completelty new instance.
   ///
   /// \param appName    The name of the application for this instance.
   /// \param engineName The name of the engine for this application.
@@ -195,7 +175,7 @@ class SharedInstance {
   /// This will result in both the shared instances having the same Vulkan
   /// Instance handle.
   ///
-  /// \param sharedInstance The other shared instance to create this shared
+  /// \param otherInstance The other shared instance to create this shared
   /// instance from.
   SharedInstance(const SharedInstance<RefCounter>& otherInstance)
   :   InstanceCounter(otherInstance.InstanceCounter),
@@ -203,10 +183,12 @@ class SharedInstance {
     InstanceCounter->increment();
   }
 
-  /// Gets the vulkan instance. This could be used to create other Vulkan
-  /// instances, in which case the counter would not work, since there would be
-  /// an uncounted vulkan instance. However, if the function is only used to
-  /// as a way to access the vulkan instance, they there will be no problem.
+  /// Gets the vulkan instance. This is designed as an accessor, so that the
+  /// class can be used to provide a raw Vulkan instance to functions which
+  /// require a raw vulkan instance. If this is used to get the raw Vulkan
+  /// instance which is then copied, the counting functionality is then broken
+  /// since when the copy is made for the raw Vulkan instance, no counting
+  /// functionality is invoked.
   VkInstance getVkInstance() const {
     return VulkanInstance;
   }
@@ -281,7 +263,6 @@ static UniqueInstance makeUniqueInstance() {
 }
 
 } // namespace vwrap
-} // namespace vs 
 
-#endif  // VISIOSOFT_VULKAWRAP_INSTANCE_INSTANCE_H
+#endif  // VULKAWRAP_INSTANCE_INSTANCE_H
 

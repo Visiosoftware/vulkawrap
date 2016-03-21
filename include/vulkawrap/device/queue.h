@@ -1,7 +1,6 @@
-//---- include/visiosoft/vulkawrap/device/queue.h ---------- -*- C++ -*- ----//
-//---- Wrappers for Vulkan queues.                                       ----//
+//---- include/vulkawrap/device/queue.h -------------------- -*- C++ -*- ----//
 //
-//                           Visiosoft Vulkawrap
+//                                  Vulkawrap
 //                          
 //                      Copyright (c) 2016 Rob Clucas        
 //                    Distributed under the MIT License
@@ -11,18 +10,17 @@
 // ========================================================================= //
 //
 /// \file  queue.h
-/// \brief Defines wrappers around a Vulkan Queue so to make the use of the
-///        Vulkan queue simpler with the rest of the VulkaWrap library.
+/// \brief Defines wrappers around a Vulkan Queue to simplify the use the raw
+///        Vulkan Queue.
 //
 //---------------------------------------------------------------------------//
 
-#ifndef VISIOSOFT_VULKAWRAP_DEVICE_QUEUE_H
-#define VISIOSOFT_VULKAWRAP_DEVICE_QUEUE_H
+#ifndef VULKAWRAP_DEVICE_QUEUE_H
+#define VULKAWRAP_DEVICE_QUEUE_H
 
 #include <vulkan/vulkan.h>
 #include <vector>
 
-namespace vs    {
 namespace vwrap {
  
 /// The types of queues which are supported -- these are the same values as
@@ -43,8 +41,7 @@ using QueueIdVec          = std::vector<uint32_t>;
 using QueueFamilyPropVec  = std::vector<VkQueueFamilyProperties>;
 
 } // namespace vwrap 
-} // namespace vs 
 
-#endif  // VISIOSOFT_VULKAWRAP_DEVICE_QUEUE_H
+#endif  // VULKAWRAP_DEVICE_QUEUE_H
 
 

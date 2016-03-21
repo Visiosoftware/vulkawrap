@@ -1,7 +1,6 @@
-//---- src/visiosoft/vulkawrap/instnace/instance.h --------- -*- C++ -*- ----//
-//---- Implementation of functionality for selecting vulkan devices.     ----//
+//---- src/vulkawrap/instnace/instance.h ------------------- -*- C++ -*- ----//
 //
-//                           Visiosoft Vulkawrap
+//                                Vulkawrap
 //                          
 //                      Copyright (c) 2016 Rob Clucas        
 //                    Distributed under the MIT License
@@ -16,10 +15,9 @@
 //
 //---------------------------------------------------------------------------//
 
-#include "visiosoft/vulkawrap/instance/instance.h"
-#include "visiosoft/vulkawrap/util/error.hpp"
+#include "vulkawrap/instance/instance.h"
+#include "vulkawrap/util/assert.hpp"
 
-namespace vs     { 
 namespace vwrap  {
 namespace detail {
 
@@ -63,6 +61,3 @@ Instance::Instance(const char* appName, const char* engineName,
 
 } // namespace detail
 } // namespace vwrap
-} // namespace vs
-
-

@@ -1,7 +1,6 @@
-//---- tests/visiosoft/vulkawrap/instance/instance_tests.cc  -*- C++ -*- ----//
-//---- Tests for the VUlkaWrap instance functionality.                   ----//
+//---- tests/vulkawrap/tests.cc ---------------------------- -*- C++ -*- ----//
 //
-//                           Visiosoft Vulkawrap
+//                                Vulkawrap
 //                          
 //                      Copyright (c) 2016 Rob Clucas        
 //                    Distributed under the MIT License
@@ -10,12 +9,13 @@
 //
 // ========================================================================= //
 //
-/// \file  instance_tests.cc
-/// \brief Implementation of the tests for the instance functionality of 
-///        VulkaWrap.
+/// \file  tests.cc
+/// \brief Main tests file for the Vulkawrap library.
 //
 //---------------------------------------------------------------------------//
 
-#include "visiosoft/vulkawrap/instance/instance/h"
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE   VulkawrapTests
+#include <boost/test/unit_test.hpp>
 
-// TODO: Add the tests ...
+

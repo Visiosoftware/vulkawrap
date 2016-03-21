@@ -1,25 +1,24 @@
-//---- examples/visiosoft/vulkawrap/triangle.cpp ----------- -*- C++ -*- ----//
-//---- Triangle example implementation.                                  ----//
+//---- examples/vulkawrap/triangle.cpp --------------------- -*- C++ -*- ----//
 //
-//                           Visiosoft VulkaWrap
+//                                Vulkawrap
 //                          
 //                      Copyright (c) 2016 Rob Clucas        
 //                    Distributed under the MIT License
 //                (See accompanying file LICENSE or copy at
-//                    https://opensource.org/licenses/MIT)
+//                   https://opensource.org/licenses/MIT)
 //
 // ========================================================================= //
 //
-/// \file   triangle.cpp
-/// \brief  Implemenation of the triangle example for Visiosoft VulkaWrap.
+/// \file   triangle.cc
+/// \brief  Implementation of the triangle example for the Vulkawrap library.
 //
 //---------------------------------------------------------------------------//
 
-#include <visiosoft/vulkawrap/device/filter.h>
+#include <vulkawrap/device/filter.h>
 #include <iostream>
 
 int main() {
-  using namespace vs::vwrap;
+  using namespace vwrap;
 
   UniqueInstance instance = makeUniqueInstance();
   NonConcurrentSharedInstance  ncSharedInstance;
